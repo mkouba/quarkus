@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
-
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
@@ -259,6 +258,13 @@ final class Types {
             }
         }
         return types;
+    }
+
+    static Map<ClassInfo, Map<TypeVariable, Type>> resolvedTypeVariables(ClassInfo classInfo,
+            BeanDeployment beanDeployment) {
+        Map<ClassInfo, Map<TypeVariable, Type>> resolvedTypeVariables = new HashMap<>();
+        getTypeClosure(classInfo, Collections.emptyMap(), beanDeployment, resolvedTypeVariables::put);
+        return resolvedTypeVariables;
     }
 
     static Set<Type> restrictBeanTypes(Set<Type> types, Collection<AnnotationInstance> annotations) {
