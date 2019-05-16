@@ -31,6 +31,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
@@ -160,12 +162,12 @@ final class Types {
                         "Producer method return type not found in index: " + producerMethod.returnType().name());
             }
             if (Kind.CLASS.equals(returnType.kind())) {
-                types = getTypeClosure(returnTypeClassInfo, Collections.emptyMap(), beanDeployment);
+                types = getTypeClosure(returnTypeClassInfo, Collections.emptyMap(), beanDeployment, null);
             } else if (Kind.PARAMETERIZED_TYPE.equals(returnType.kind())) {
                 types = getTypeClosure(returnTypeClassInfo,
                         buildResolvedMap(returnType.asParameterizedType().arguments(), returnTypeClassInfo.typeParameters(),
                                 Collections.emptyMap()),
-                        beanDeployment);
+                        beanDeployment, null);
             } else {
                 throw new IllegalArgumentException("Unsupported return type");
             }
@@ -186,12 +188,12 @@ final class Types {
                 throw new IllegalArgumentException("Producer field type not found in index: " + producerField.type().name());
             }
             if (Kind.CLASS.equals(fieldType.kind())) {
-                types = getTypeClosure(fieldClassInfo, Collections.emptyMap(), beanDeployment);
+                types = getTypeClosure(fieldClassInfo, Collections.emptyMap(), beanDeployment, null);
             } else if (Kind.PARAMETERIZED_TYPE.equals(fieldType.kind())) {
                 types = getTypeClosure(fieldClassInfo,
                         buildResolvedMap(fieldType.asParameterizedType().arguments(), fieldClassInfo.typeParameters(),
                                 Collections.emptyMap()),
-                        beanDeployment);
+                        beanDeployment, null);
             } else {
                 throw new IllegalArgumentException("Unsupported return type");
             }
@@ -201,12 +203,12 @@ final class Types {
 
     static Set<Type> getClassBeanTypeClosure(ClassInfo classInfo, Map<TypeVariable, Type> resolvedTypeParameters,
             BeanDeployment beanDeployment) {
-        return restrictBeanTypes(getTypeClosure(classInfo, resolvedTypeParameters, beanDeployment),
+        return restrictBeanTypes(getTypeClosure(classInfo, resolvedTypeParameters, beanDeployment, null),
                 beanDeployment.getAnnotations(classInfo));
     }
 
     static Set<Type> getTypeClosure(ClassInfo classInfo, Map<TypeVariable, Type> resolvedTypeParameters,
-            BeanDeployment beanDeployment) {
+            BeanDeployment beanDeployment, BiConsumer<ClassInfo, Map<TypeVariable, Type>> resolvedTypeVariablesConsumer) {
         Set<Type> types = new HashSet<>();
         List<TypeVariable> typeParameters = classInfo.typeParameters();
         if (!typeParameters.isEmpty()) {
@@ -219,6 +221,13 @@ final class Types {
                     resolvedType = paramType.bounds().get(0);
                 }
                 typeParams[i] = resolvedType;
+            }
+            if (resolvedTypeVariablesConsumer != null) {
+                Map<TypeVariable, Type> resolved = new HashMap<>();
+                for (int i = 0; i < typeParameters.size(); i++) {
+                    resolved.put(typeParameters.get(i), typeParams[i]);
+                }
+                resolvedTypeVariablesConsumer.accept(classInfo, resolved);
             }
             types.add(ParameterizedType.create(classInfo.name(), typeParams, null));
         } else {
@@ -233,7 +242,7 @@ final class Types {
                     resolved = buildResolvedMap(interfaceType.asParameterizedType().arguments(),
                             interfaceClassInfo.typeParameters(), resolvedTypeParameters);
                 }
-                types.addAll(getTypeClosure(interfaceClassInfo, resolved, beanDeployment));
+                types.addAll(getTypeClosure(interfaceClassInfo, resolved, beanDeployment, resolvedTypeVariablesConsumer));
             }
         }
         // Superclass
@@ -246,7 +255,7 @@ final class Types {
                             superClassInfo.typeParameters(),
                             resolvedTypeParameters);
                 }
-                types.addAll(getTypeClosure(superClassInfo, resolved, beanDeployment));
+                types.addAll(getTypeClosure(superClassInfo, resolved, beanDeployment, resolvedTypeVariablesConsumer));
             }
         }
         return types;
