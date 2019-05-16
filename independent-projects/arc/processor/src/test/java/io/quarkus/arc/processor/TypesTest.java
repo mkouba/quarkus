@@ -16,6 +16,44 @@
 
 package io.quarkus.arc.processor;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Set;
+
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
+import org.jboss.jandex.ParameterizedType;
+import org.jboss.jandex.Type;
+import org.jboss.jandex.Type.Kind;
+import org.junit.Test;
+
 public class TypesTest {
 
+    @Test
+    public void testGetTypeClosure() throws IOException {
+        IndexView index = Basics.index(Foo.class, Baz.class);
+        DotName bazName = DotName.createSimple(Baz.class.getName());
+        DotName fooName = DotName.createSimple(Foo.class.getName());
+        Set<Type> types = Types.getTypeClosure(index.getClassByName(bazName),
+                Collections.emptyMap(),
+                new BeanDeployment(index, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(),
+                        Collections.emptyList(), Collections.emptyList(), null, false, Collections.emptyList(),
+                        Collections.emptyMap()));
+        assertEquals(2, types.size());
+        assertTrue(types.contains(Type.create(bazName, Kind.CLASS)));
+        assertTrue(types.contains(ParameterizedType.create(fooName,
+                new Type[] { Type.create(DotName.createSimple(String.class.getName()), Kind.CLASS) },
+                null)));
+    }
+
+    static class Foo<T> {
+
+    }
+
+    static class Baz extends Foo<String> {
+
+    }
 }

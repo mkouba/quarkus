@@ -205,7 +205,7 @@ final class Types {
                 beanDeployment.getAnnotations(classInfo));
     }
 
-    private static Set<Type> getTypeClosure(ClassInfo classInfo, Map<TypeVariable, Type> resolvedTypeParameters,
+    static Set<Type> getTypeClosure(ClassInfo classInfo, Map<TypeVariable, Type> resolvedTypeParameters,
             BeanDeployment beanDeployment) {
         Set<Type> types = new HashSet<>();
         List<TypeVariable> typeParameters = classInfo.typeParameters();
