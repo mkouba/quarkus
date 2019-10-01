@@ -18,9 +18,13 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
+                    <suiteXmlFiles>
+                        <suiteXmlFile>tck-base-suite.xml</suiteXmlFile>
+                    </suiteXmlFiles>
                     <systemPropertyVariables>
                         <!-- Disable quarkus optimization -->
                         <quarkus.arc.remove-unused-beans>false</quarkus.arc.remove-unused-beans>
+                        <mp.jwt.tck.jwks.baseURL>http://localhost:8081/</mp.jwt.tck.jwks.baseURL>
                     </systemPropertyVariables>
                     <!-- This workaround allows us to run a single test using
                         the "test" system property -->
@@ -29,8 +33,18 @@
                         <dependency>org.eclipse.microprofile.jwt:microprofile-jwt-auth-tck</dependency>
                     </dependenciesToScan>
                     <excludes>
-                        <!-- Doesn't fail at deployment phase -->
-                        <exclude>org.eclipse.microprofile.jwt.tck.container.jaxrs.AppScopedTest</exclude>
+<!--                        &lt;!&ndash; Doesn't fail at deployment phase &ndash;&gt;-->
+<!--                        <exclude>org.eclipse.microprofile.jwt.tck.container.jaxrs.AppScopedTest</exclude>-->
+
+<!--                        &lt;!&ndash; Requires EJBs &ndash;&gt;-->
+<!--                        &lt;!&ndash; Challenging TCK https://github.com/eclipse/microprofile-jwt-auth/issues/134 &ndash;&gt;-->
+<!--                        <exclude>org.eclipse.microprofile.jwt.tck.container.servlet.ServletTest</exclude>-->
+<!--                        <exclude>org.eclipse.microprofile.jwt.tck.container.ejb.EjbTest</exclude>-->
+
+<!--                        &lt;!&ndash; Temporary removes &ndash;&gt;-->
+
+<!--                        &lt;!&ndash; Fails to parse JWT &ndash;&gt;-->
+<!--                        <exclude>org.eclipse.microprofile.jwt.tck.container.jaxrs.PrimitiveInjectionTest</exclude>-->
                     </excludes>
                 </configuration>
             </plugin>
