@@ -32,20 +32,6 @@
                     <dependenciesToScan>
                         <dependency>org.eclipse.microprofile.jwt:microprofile-jwt-auth-tck</dependency>
                     </dependenciesToScan>
-                    <excludes>
-<!--                        &lt;!&ndash; Doesn't fail at deployment phase &ndash;&gt;-->
-<!--                        <exclude>org.eclipse.microprofile.jwt.tck.container.jaxrs.AppScopedTest</exclude>-->
-
-<!--                        &lt;!&ndash; Requires EJBs &ndash;&gt;-->
-<!--                        &lt;!&ndash; Challenging TCK https://github.com/eclipse/microprofile-jwt-auth/issues/134 &ndash;&gt;-->
-<!--                        <exclude>org.eclipse.microprofile.jwt.tck.container.servlet.ServletTest</exclude>-->
-<!--                        <exclude>org.eclipse.microprofile.jwt.tck.container.ejb.EjbTest</exclude>-->
-
-<!--                        &lt;!&ndash; Temporary removes &ndash;&gt;-->
-
-<!--                        &lt;!&ndash; Fails to parse JWT &ndash;&gt;-->
-<!--                        <exclude>org.eclipse.microprofile.jwt.tck.container.jaxrs.PrimitiveInjectionTest</exclude>-->
-                    </excludes>
                 </configuration>
             </plugin>
         </plugins>
