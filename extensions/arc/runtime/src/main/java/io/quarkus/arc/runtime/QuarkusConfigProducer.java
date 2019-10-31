@@ -9,6 +9,7 @@ import java.util.Set;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Produces;
+import javax.enterprise.inject.Typed;
 import javax.enterprise.inject.spi.InjectionPoint;
 
 import org.eclipse.microprofile.config.Config;
@@ -29,6 +30,8 @@ public class QuarkusConfigProducer {
         return ConfigProviderResolver.instance().getConfig();
     }
 
+    // Restrict the bean types to be able to run an app built with Java 12+ on Java 8
+    @Typed(String.class)
     @Dependent
     @Produces
     @ConfigProperty
