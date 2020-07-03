@@ -16,6 +16,7 @@ import io.smallrye.mutiny.groups.UniSubscribe;
 import io.smallrye.mutiny.subscription.Cancellable;
 import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.Json;
 import io.vertx.ext.web.RoutingContext;
@@ -29,6 +30,8 @@ public class Methods {
     static final MethodDescriptor MULTIMAP_SET = MethodDescriptor
             .ofMethod(MultiMap.class, "set", MultiMap.class, String.class, String.class);
 
+    static final MethodDescriptor REQUEST = MethodDescriptor
+            .ofMethod(RoutingContext.class, "request", HttpServerRequest.class);
     static final MethodDescriptor RESPONSE = MethodDescriptor
             .ofMethod(RoutingContext.class, "response", HttpServerResponse.class);
 
