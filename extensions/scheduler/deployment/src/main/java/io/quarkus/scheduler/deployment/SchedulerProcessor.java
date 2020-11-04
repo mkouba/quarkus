@@ -232,7 +232,7 @@ public class SchedulerProcessor {
 
     @BuildStep
     public RuntimeTemplateInfoBuildItem devConsoleInfo() {
-        Map.Entry<String, String> entry = ArtifactInfoUtil.groupIdAndArtifactId(ScheduledBusinessMethodItem.class);
+        Map.Entry<String, String> entry = ArtifactInfoUtil.groupIdAndArtifactId(SchedulerRecorder.class);
         return new RuntimeTemplateInfoBuildItem(entry.getKey(), entry.getValue(), "schedulerContext",
                 new BeanLookupSupplier(SchedulerContext.class));
     }
@@ -240,7 +240,8 @@ public class SchedulerProcessor {
     @BuildStep
     @Record(STATIC_INIT)
     DevConsoleRouteBuildItem invokeEndpoint(SchedulerRecorder recorder) {
-        return new DevConsoleRouteBuildItem("io.quarkus", "quarkus-scheduler", "schedules", "POST",
+        Map.Entry<String, String> entry = ArtifactInfoUtil.groupIdAndArtifactId(SchedulerRecorder.class);
+        return new DevConsoleRouteBuildItem(entry.getKey(), entry.getValue(), "schedules", "POST",
                 new Handler<RoutingContext>() {
                     @Override
                     public void handle(RoutingContext event) {

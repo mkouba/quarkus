@@ -12,7 +12,6 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
 
-import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.runtime.ArcContainerSupplier;
@@ -30,7 +29,7 @@ public class DevConsoleProcessor {
     @BuildStep(onlyIf = IsDevelopment.class)
     @Record(ExecutionTime.STATIC_INIT)
     public RuntimeTemplateInfoBuildItem collectBeanInfo(ArcRecorder recorder) {
-        Map.Entry<String, String> entry = ArtifactInfoUtil.groupIdAndArtifactId(AdditionalBeanBuildItem.class);
+        Map.Entry<String, String> entry = ArtifactInfoUtil.groupIdAndArtifactId(ArcRecorder.class);
         return new RuntimeTemplateInfoBuildItem(entry.getKey(), entry.getValue(), "arcContainer", new ArcContainerSupplier());
     }
 

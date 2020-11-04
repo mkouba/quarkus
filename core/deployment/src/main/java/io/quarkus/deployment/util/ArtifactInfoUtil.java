@@ -1,7 +1,5 @@
 package io.quarkus.deployment.util;
 
-import io.quarkus.builder.item.BuildItem;
-
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -22,9 +20,9 @@ public final class ArtifactInfoUtil {
      *
      * The way this works is by depending on the pom.properties file that should be present in the deployment jar
      */
-    public static Map.Entry<String, String> groupIdAndArtifactId(Class<? extends BuildItem> buildItemClass) {
+    public static Map.Entry<String, String> groupIdAndArtifactId(Class<?> clazz) {
         try {
-            URL jarLocation = buildItemClass.getProtectionDomain().getCodeSource().getLocation();
+            URL jarLocation = clazz.getProtectionDomain().getCodeSource().getLocation();
             try (FileSystem fs = FileSystems.newFileSystem(Paths.get(jarLocation.toURI()),
                     Thread.currentThread().getContextClassLoader())) {
                 Path metaInfPath = fs.getPath("/META-INF");
@@ -37,11 +35,13 @@ public final class ArtifactInfoUtil {
                     props.load(Files.newInputStream(pomProperties.get()));
                     return new AbstractMap.SimpleEntry<>(props.getProperty("groupId"), props.getProperty("artifactId"));
                 } else {
-                    throw new RuntimeException("Unable to determine groupId and artifactId of the jar that contains " + buildItemClass.getName() + " because the jar doesn't contain the necessary metadata");
+                    throw new RuntimeException("Unable to determine groupId and artifactId of the jar that contains "
+                            + clazz.getName() + " because the jar doesn't contain the necessary metadata");
                 }
             }
         } catch (IOException | URISyntaxException e) {
-            throw new RuntimeException("Unable to determine groupId and artifactId of the jar that contains " + buildItemClass.getName(), e);
+            throw new RuntimeException("Unable to determine groupId and artifactId of the jar that contains " + clazz.getName(),
+                    e);
         }
     }
 }
