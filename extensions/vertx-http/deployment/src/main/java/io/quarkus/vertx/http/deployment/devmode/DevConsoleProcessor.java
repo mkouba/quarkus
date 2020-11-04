@@ -18,6 +18,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
+import io.quarkus.deployment.recording.BytecodeRecorderImpl;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.RuntimeTemplateInfoBuildItem;
@@ -174,7 +175,7 @@ public class DevConsoleProcessor {
         newRouter();
         List<RouteBuildItem> runtimeRoutes = new ArrayList<>();
         for (DevConsoleRouteBuildItem i : routes) {
-            if (i.isRuntime()) {
+            if (i.getHandler() instanceof BytecodeRecorderImpl.ReturnedProxy) {
                 runtimeRoutes.add(new RouteBuildItem(
                         new RuntimeDevConsoleRoute(i.getGroupId(), i.getArtifactId(), i.getPath(), i.getMethod()),
                         i.getHandler()));
