@@ -71,7 +71,7 @@ public class DevConsole implements Handler<RoutingContext> {
                     event.response().setStatusCode(200).headers().set(HttpHeaderNames.CONTENT_TYPE, "text/html; charset=UTF-8");
                     renderTemplate(event, template.instance());
                 } else {
-                    event.response().setStatusCode(404).end();
+                    event.next();
                 }
             }
         } catch (IOException e) {

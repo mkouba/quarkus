@@ -1,5 +1,6 @@
 package io.quarkus.vertx.http.deployment.devmode;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +19,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.dev.console.DevConsoleManager;
+import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.RuntimeTemplateInfoBuildItem;
 import io.quarkus.devconsole.spi.TemplateInfoBuildItem;
 import io.quarkus.netty.runtime.virtual.VirtualChannel;
@@ -25,9 +27,12 @@ import io.quarkus.netty.runtime.virtual.VirtualServerChannel;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.devmode.DevConsoleFilter;
 import io.quarkus.vertx.http.runtime.devmode.DevConsoleRecorder;
+import io.quarkus.vertx.http.runtime.devmode.RuntimeDevConsoleRoute;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerOptions;
+import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.impl.Http1xServerConnection;
 import io.vertx.core.impl.ContextInternal;
 import io.vertx.core.impl.VertxInternal;
@@ -43,6 +48,7 @@ public class DevConsoleProcessor {
     protected static volatile Vertx devConsoleVertx;
     protected static volatile Channel channel;
     static Router router;
+    static Router mainRouter;
 
     public static void initializeVirtual() {
         if (virtualBootstrap != null) {
@@ -68,15 +74,6 @@ public class DevConsoleProcessor {
                 }
             }
         });
-        router = Router.router(vertx);
-        router.route().handler(new DevConsole());
-        Handler<RoutingContext> errorHandler = new Handler<RoutingContext>() {
-            @Override
-            public void handle(RoutingContext event) {
-                log.error("Dev console request failed ", event.failure());
-            }
-        };
-        router.errorHandler(500, errorHandler);
         virtualBootstrap = new ServerBootstrap();
         virtualBootstrap.group(vertx.getEventLoopGroup())
                 .channel(VirtualServerChannel.class)
@@ -101,10 +98,12 @@ public class DevConsoleProcessor {
                                     context,
                                     "localhost",
                                     null);
-                            Router mainRouter = Router.router(vertx);
-                            mainRouter.errorHandler(500, errorHandler);
-                            mainRouter.route("/@dev/*").subRouter(router);
-                            conn.handler(mainRouter);
+                            conn.handler(new Handler<HttpServerRequest>() {
+                                @Override
+                                public void handle(HttpServerRequest event) {
+                                    mainRouter.handle(event);
+                                }
+                            });
                             return conn;
                         });
                         ch.pipeline().addLast("handler", handler);
@@ -122,12 +121,28 @@ public class DevConsoleProcessor {
 
     }
 
+    protected static void newRouter() {
+        Handler<RoutingContext> errorHandler = new Handler<RoutingContext>() {
+            @Override
+            public void handle(RoutingContext event) {
+                log.error("Dev console request failed ", event.failure());
+            }
+        };
+        router = Router.router(devConsoleVertx);
+        router.errorHandler(500, errorHandler);
+        router.route().method(HttpMethod.GET)
+                .order(Integer.MIN_VALUE)
+                .handler(new DevConsole());
+        mainRouter = Router.router(devConsoleVertx);
+        mainRouter.errorHandler(500, errorHandler);
+        mainRouter.route("/@dev/*").subRouter(router);
+    }
+
     @BuildStep(onlyIf = IsDevelopment.class)
     public RouteBuildItem setupBuildStep(LaunchModeBuildItem launchModeBuildItem) {
         if (!launchModeBuildItem.getLaunchMode().isDevOrTest()) {
             return null;
         }
-        initializeVirtual();
         DevConsoleManager.registerHandler(new DevConsoleHttpHandler());
         return new RouteBuildItem("/@dev/*", new DevConsoleFilter());
 
@@ -151,5 +166,24 @@ public class DevConsoleProcessor {
         for (RuntimeTemplateInfoBuildItem i : items) {
             recorder.addInfo(i.getGroupId(), i.getArtifactId(), i.getName(), i.getObject());
         }
+    }
+
+    @BuildStep(onlyIf = IsDevelopment.class)
+    public List<RouteBuildItem> setupActions(List<DevConsoleRouteBuildItem> routes) {
+        initializeVirtual();
+        newRouter();
+        List<RouteBuildItem> runtimeRoutes = new ArrayList<>();
+        for (DevConsoleRouteBuildItem i : routes) {
+            if (i.isRuntime()) {
+                runtimeRoutes.add(new RouteBuildItem(
+                        new RuntimeDevConsoleRoute(i.getGroupId(), i.getArtifactId(), i.getPath(), i.getMethod()),
+                        i.getHandler()));
+            } else {
+                router.route(HttpMethod.valueOf(i.getMethod()),
+                        "/" + i.getGroupId() + "." + i.getArtifactId() + "/" + i.getPath())
+                        .handler(i.getHandler());
+            }
+        }
+        return runtimeRoutes;
     }
 }

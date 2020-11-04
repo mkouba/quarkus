@@ -1,6 +1,7 @@
 package io.quarkus.scheduler.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
+import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -54,6 +55,7 @@ import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.RuntimeTemplateInfoBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
@@ -69,6 +71,8 @@ import io.quarkus.scheduler.runtime.SchedulerConfig;
 import io.quarkus.scheduler.runtime.SchedulerContext;
 import io.quarkus.scheduler.runtime.SchedulerRecorder;
 import io.quarkus.scheduler.runtime.SimpleScheduler;
+import io.vertx.core.Handler;
+import io.vertx.ext.web.RoutingContext;
 
 /**
  * @author Martin Kouba
@@ -226,9 +230,21 @@ public class SchedulerProcessor {
     }
 
     @BuildStep
-    public RuntimeTemplateInfoBuildItem devConsole() {
+    public RuntimeTemplateInfoBuildItem devConsoleInfo() {
         return new RuntimeTemplateInfoBuildItem("io.quarkus", "quarkus-scheduler", "schedulerContext",
                 new BeanLookupSupplier(SchedulerContext.class));
+    }
+
+    @BuildStep
+    @Record(STATIC_INIT)
+    DevConsoleRouteBuildItem invokeEndpoint(SchedulerRecorder recorder) {
+        return new DevConsoleRouteBuildItem("io.quarkus", "quarkus-scheduler", "schedules", "POST",
+                new Handler<RoutingContext>() {
+                    @Override
+                    public void handle(RoutingContext event) {
+                        event.response().end("hello");
+                    }
+                });
     }
 
     private String generateInvoker(ScheduledBusinessMethodItem scheduledMethod, ClassOutput classOutput) {

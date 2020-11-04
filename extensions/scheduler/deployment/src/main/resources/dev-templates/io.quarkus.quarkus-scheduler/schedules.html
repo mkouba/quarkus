@@ -26,7 +26,7 @@
     </tr>
    </thead>
    <tbody>
-    {#for scheduledMethod in info:schedulerContext.scheduledMethods}
+   {#for scheduledMethod in info:schedulerContext.scheduledMethods}
     <tr>
       <td>
        {#for schedule in scheduledMethod.schedules}
@@ -40,6 +40,10 @@
       </td>
       <td>
        {scheduledMethod.methodDescription}
+       <form method="post">
+        <input type="hidden" value="{scheduledMethod.methodDescription}">
+        <input type="submit" value="Invoke" >
+       </form>
       </td>
     {/for}
    </tbody>
