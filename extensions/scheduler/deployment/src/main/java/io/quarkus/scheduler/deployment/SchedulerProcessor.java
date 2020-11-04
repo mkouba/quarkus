@@ -55,9 +55,8 @@ import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.deployment.util.ArtifactInfoUtil;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
-import io.quarkus.devconsole.spi.RuntimeTemplateInfoBuildItem;
+import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.MethodCreator;
@@ -231,17 +230,15 @@ public class SchedulerProcessor {
     }
 
     @BuildStep
-    public RuntimeTemplateInfoBuildItem devConsoleInfo() {
-        Map.Entry<String, String> entry = ArtifactInfoUtil.groupIdAndArtifactId(SchedulerRecorder.class);
-        return new RuntimeTemplateInfoBuildItem(entry.getKey(), entry.getValue(), "schedulerContext",
+    public DevConsoleRuntimeTemplateInfoBuildItem devConsoleInfo() {
+        return new DevConsoleRuntimeTemplateInfoBuildItem("schedulerContext",
                 new BeanLookupSupplier(SchedulerContext.class));
     }
 
     @BuildStep
     @Record(STATIC_INIT)
     DevConsoleRouteBuildItem invokeEndpoint(SchedulerRecorder recorder) {
-        Map.Entry<String, String> entry = ArtifactInfoUtil.groupIdAndArtifactId(SchedulerRecorder.class);
-        return new DevConsoleRouteBuildItem(entry.getKey(), entry.getValue(), "schedules", "POST",
+        return new DevConsoleRouteBuildItem("schedules", "POST",
                 new Handler<RoutingContext>() {
                     @Override
                     public void handle(RoutingContext event) {

@@ -2,7 +2,6 @@ package io.quarkus.arc.deployment.devconsole;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -20,21 +19,20 @@ import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.util.ArtifactInfoUtil;
-import io.quarkus.devconsole.spi.RuntimeTemplateInfoBuildItem;
-import io.quarkus.devconsole.spi.TemplateInfoBuildItem;
+import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
+import io.quarkus.devconsole.spi.DevConsoleTemplateInfoBuildItem;
 
 public class DevConsoleProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     @Record(ExecutionTime.STATIC_INIT)
-    public RuntimeTemplateInfoBuildItem collectBeanInfo(ArcRecorder recorder) {
-        Map.Entry<String, String> entry = ArtifactInfoUtil.groupIdAndArtifactId(ArcRecorder.class);
-        return new RuntimeTemplateInfoBuildItem(entry.getKey(), entry.getValue(), "arcContainer", new ArcContainerSupplier());
+    public DevConsoleRuntimeTemplateInfoBuildItem collectBeanInfo(ArcRecorder recorder) {
+        return new DevConsoleRuntimeTemplateInfoBuildItem("arcContainer",
+                new ArcContainerSupplier());
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
-    public TemplateInfoBuildItem collectBeanInfo(ValidationPhaseBuildItem validationPhaseBuildItem) {
+    public DevConsoleTemplateInfoBuildItem collectBeanInfo(ValidationPhaseBuildItem validationPhaseBuildItem) {
         DevBeanInfos beanInfos = new DevBeanInfos();
         for (BeanInfo beanInfo : validationPhaseBuildItem.getContext().beans().collect()) {
             beanInfos.addBeanInfo(makeBeanInfo(beanInfo));
@@ -42,7 +40,7 @@ public class DevConsoleProcessor {
         for (BeanInfo beanInfo : validationPhaseBuildItem.getContext().removedBeans().collect()) {
             beanInfos.addRemovedBeanInfo(makeBeanInfo(beanInfo));
         }
-        return new TemplateInfoBuildItem("io.quarkus", "quarkus-arc", "devBeanInfos", beanInfos);
+        return new DevConsoleTemplateInfoBuildItem("devBeanInfos", beanInfos);
     }
 
     private DevBeanInfo makeBeanInfo(BeanInfo beanInfo) {

@@ -15,6 +15,8 @@ import java.util.Properties;
 
 public final class ArtifactInfoUtil {
 
+    public static final String DEPLOYMENT = "-deployment";
+
     /**
      * Returns a Map.Entry containing the groupId and the artifactId of the module the contains the BuildItem
      *
@@ -33,7 +35,11 @@ public final class ArtifactInfoUtil {
                 if (pomProperties.isPresent()) {
                     Properties props = new Properties();
                     props.load(Files.newInputStream(pomProperties.get()));
-                    return new AbstractMap.SimpleEntry<>(props.getProperty("groupId"), props.getProperty("artifactId"));
+                    String artifactId = props.getProperty("artifactId");
+                    if (artifactId.endsWith(DEPLOYMENT)) {
+                        artifactId = artifactId.substring(0, artifactId.length() - DEPLOYMENT.length());
+                    }
+                    return new AbstractMap.SimpleEntry<>(props.getProperty("groupId"), artifactId);
                 } else {
                     throw new RuntimeException("Unable to determine groupId and artifactId of the jar that contains "
                             + clazz.getName() + " because the jar doesn't contain the necessary metadata");

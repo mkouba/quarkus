@@ -21,8 +21,8 @@ import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.recording.BytecodeRecorderImpl;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
-import io.quarkus.devconsole.spi.RuntimeTemplateInfoBuildItem;
-import io.quarkus.devconsole.spi.TemplateInfoBuildItem;
+import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
+import io.quarkus.devconsole.spi.DevConsoleTemplateInfoBuildItem;
 import io.quarkus.netty.runtime.virtual.VirtualChannel;
 import io.quarkus.netty.runtime.virtual.VirtualServerChannel;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
@@ -150,9 +150,9 @@ public class DevConsoleProcessor {
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
-    public ServiceStartBuildItem buildTimeTemplates(List<TemplateInfoBuildItem> items) {
+    public ServiceStartBuildItem buildTimeTemplates(List<DevConsoleTemplateInfoBuildItem> items) {
         Map<String, Map<String, Object>> results = new HashMap<>();
-        for (TemplateInfoBuildItem i : items) {
+        for (DevConsoleTemplateInfoBuildItem i : items) {
             Map<String, Object> map = results.computeIfAbsent(i.getGroupId() + "." + i.getArtifactId(), (s) -> new HashMap<>());
             map.put(i.getName(), i.getObject());
         }
@@ -162,9 +162,9 @@ public class DevConsoleProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     @Record(ExecutionTime.RUNTIME_INIT)
-    public void runtimeTemplates(List<RuntimeTemplateInfoBuildItem> items, DevConsoleRecorder recorder,
+    public void runtimeTemplates(List<DevConsoleRuntimeTemplateInfoBuildItem> items, DevConsoleRecorder recorder,
             List<ServiceStartBuildItem> gate) {
-        for (RuntimeTemplateInfoBuildItem i : items) {
+        for (DevConsoleRuntimeTemplateInfoBuildItem i : items) {
             recorder.addInfo(i.getGroupId(), i.getArtifactId(), i.getName(), i.getObject());
         }
     }
