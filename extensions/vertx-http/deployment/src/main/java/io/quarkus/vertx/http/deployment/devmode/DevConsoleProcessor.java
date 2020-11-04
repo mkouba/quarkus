@@ -146,7 +146,8 @@ public class DevConsoleProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     @Record(ExecutionTime.RUNTIME_INIT)
-    public void runtimeTemplates(List<RuntimeTemplateInfoBuildItem> items, DevConsoleRecorder recorder) {
+    public void runtimeTemplates(List<RuntimeTemplateInfoBuildItem> items, DevConsoleRecorder recorder,
+            List<ServiceStartBuildItem> gate) {
         for (RuntimeTemplateInfoBuildItem i : items) {
             recorder.addInfo(i.getGroupId(), i.getArtifactId(), i.getName(), i.getObject());
         }

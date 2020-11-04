@@ -41,6 +41,7 @@ import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.arc.runtime.BeanLookupSupplier;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -53,6 +54,7 @@ import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.devconsole.spi.RuntimeTemplateInfoBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.MethodCreator;
@@ -217,11 +219,16 @@ public class SchedulerProcessor {
         }
 
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(SchedulerContext.class).setRuntimeInit()
-                .name("schedulerContext")
                 .supplier(recorder.createContext(config, executor.getExecutorProxy(), scheduledMetadata))
                 .done());
 
         return new FeatureBuildItem(Feature.SCHEDULER);
+    }
+
+    @BuildStep
+    public RuntimeTemplateInfoBuildItem devConsole() {
+        return new RuntimeTemplateInfoBuildItem("io.quarkus", "quarkus-scheduler", "schedulerContext",
+                new BeanLookupSupplier(SchedulerContext.class));
     }
 
     private String generateInvoker(ScheduledBusinessMethodItem scheduledMethod, ClassOutput classOutput) {
