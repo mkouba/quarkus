@@ -55,6 +55,7 @@ import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.util.ArtifactInfoUtil;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.RuntimeTemplateInfoBuildItem;
 import io.quarkus.gizmo.ClassCreator;
@@ -231,7 +232,8 @@ public class SchedulerProcessor {
 
     @BuildStep
     public RuntimeTemplateInfoBuildItem devConsoleInfo() {
-        return new RuntimeTemplateInfoBuildItem("io.quarkus", "quarkus-scheduler", "schedulerContext",
+        Map.Entry<String, String> entry = ArtifactInfoUtil.groupIdAndArtifactId(ScheduledBusinessMethodItem.class);
+        return new RuntimeTemplateInfoBuildItem(entry.getKey(), entry.getValue(), "schedulerContext",
                 new BeanLookupSupplier(SchedulerContext.class));
     }
 

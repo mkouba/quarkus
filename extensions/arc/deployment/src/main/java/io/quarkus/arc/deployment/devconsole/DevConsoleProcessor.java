@@ -2,6 +2,7 @@ package io.quarkus.arc.deployment.devconsole;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -11,6 +12,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
 
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.runtime.ArcContainerSupplier;
@@ -19,6 +21,7 @@ import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.util.ArtifactInfoUtil;
 import io.quarkus.devconsole.spi.RuntimeTemplateInfoBuildItem;
 import io.quarkus.devconsole.spi.TemplateInfoBuildItem;
 
@@ -27,7 +30,8 @@ public class DevConsoleProcessor {
     @BuildStep(onlyIf = IsDevelopment.class)
     @Record(ExecutionTime.STATIC_INIT)
     public RuntimeTemplateInfoBuildItem collectBeanInfo(ArcRecorder recorder) {
-        return new RuntimeTemplateInfoBuildItem("io.quarkus", "quarkus-arc", "arcContainer", new ArcContainerSupplier());
+        Map.Entry<String, String> entry = ArtifactInfoUtil.groupIdAndArtifactId(AdditionalBeanBuildItem.class);
+        return new RuntimeTemplateInfoBuildItem(entry.getKey(), entry.getValue(), "arcContainer", new ArcContainerSupplier());
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
