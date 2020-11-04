@@ -20,6 +20,12 @@ import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.web.RoutingContext;
 
+/**
+ * This is a Handler running in the regular runtime Vert.x instance
+ * and what it does is to take the Vert.x request coming from client (under /@dev/)
+ * and create the DevConsoleRequest that ends up being sent to the Netty Virtual Channel
+ * which is eventually piped into the Netty event loop that powers the Dev Vert.x instance.
+ */
 public class DevConsoleFilter implements Handler<RoutingContext> {
 
     private static final Logger log = Logger.getLogger(DevConsoleFilter.class);

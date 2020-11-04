@@ -26,6 +26,10 @@ import io.quarkus.qute.ValueResolvers;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
+/**
+ * This is a Handler running in the Dev Vert.x instance (which is loaded by the Augmentation ClassLoader)
+ * and has access to build time stuff
+ */
 public class DevConsole implements Handler<RoutingContext> {
 
     private static final ThreadLocal<String> currentExtension = new ThreadLocal<>();
