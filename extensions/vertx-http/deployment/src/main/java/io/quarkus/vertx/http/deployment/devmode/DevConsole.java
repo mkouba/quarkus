@@ -28,13 +28,28 @@ import io.vertx.ext.web.RoutingContext;
 
 public class DevConsole implements Handler<RoutingContext> {
 
-    Engine engine = Engine.builder().addDefaultSectionHelpers().addDefaultValueResolvers()
+    private static final ThreadLocal<String> currentExtension = new ThreadLocal<>();
+
+    static final Engine engine = Engine.builder().addDefaultSectionHelpers().addDefaultValueResolvers()
             .addValueResolver(new ReflectionValueResolver())
             .addValueResolver(ValueResolvers.rawResolver())
             .addNamespaceResolver(NamespaceResolver.builder("inject").resolve(ctx -> {
                 Object result = DevConsoleManager.resolve(ctx.getName());
                 return result == null ? Results.Result.NOT_FOUND : result;
-            }).build()).build();
+            }).build())
+            .addNamespaceResolver(NamespaceResolver.builder("info").resolve(ctx -> {
+                String ext = currentExtension.get();
+                if (ext == null) {
+                    return Results.Result.NOT_FOUND;
+                }
+                Map<String, Object> map = DevConsoleManager.getTemplateInfo().get(ext);
+                if (map == null) {
+                    return Results.Result.NOT_FOUND;
+                }
+                Object result = map.get(ctx.getName());
+                return result == null ? Results.Result.NOT_FOUND : result;
+            }).build())
+            .build();
 
     @Override
     public void handle(RoutingContext event) {
@@ -43,6 +58,13 @@ public class DevConsole implements Handler<RoutingContext> {
             if (path.isEmpty() || path.equals("/")) {
                 sendMainPage(event);
             } else {
+                int nsIndex = path.indexOf("/");
+                if (nsIndex == -1) {
+                    event.response().setStatusCode(404).end();
+                    return;
+                }
+                String namespace = path.substring(0, nsIndex);
+                currentExtension.set(namespace);
                 URL url = getClass().getClassLoader().getResource("/dev-templates/" + path + ".html");
                 if (url != null) {
                     Template template = readTemplate(url);
@@ -86,6 +108,7 @@ public class DevConsole implements Handler<RoutingContext> {
                 Boolean unlisted = (Boolean) metadata.get("unlisted");
                 String artifactId = (String) loaded.get("artifact-id");
                 String groupId = (String) loaded.get("group-id");
+                currentExtension.set(groupId + "." + artifactId);
                 URL extensionSimple = getClass().getClassLoader()
                         .getResource("/dev-templates/" + groupId + "." + artifactId + "/" + artifactId + ".html");
                 boolean display = (unlisted == null || !unlisted) || extensionSimple != null || metadata.containsKey("guide");

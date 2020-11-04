@@ -1,6 +1,4 @@
-package io.quarkus.arc.deployment;
-
-import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
+package io.quarkus.arc.deployment.devconsole;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,42 +11,35 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
 
+import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.processor.BeanInfo;
-import io.quarkus.arc.runtime.DevConsoleProvider;
-import io.quarkus.arc.runtime.DevConsoleProvider.ClassName;
-import io.quarkus.arc.runtime.DevConsoleProvider.DevBeanInfo;
-import io.quarkus.arc.runtime.DevConsoleProvider.DevBeanInfos;
-import io.quarkus.arc.runtime.DevConsoleProvider.DevBeanKind;
-import io.quarkus.arc.runtime.DevConsoleRecorder;
+import io.quarkus.arc.runtime.ArcContainerSupplier;
+import io.quarkus.arc.runtime.ArcRecorder;
+import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.runtime.LaunchMode;
+import io.quarkus.devconsole.spi.RuntimeTemplateInfoBuildItem;
+import io.quarkus.devconsole.spi.TemplateInfoBuildItem;
 
 public class DevConsoleProcessor {
-    @BuildStep
-    public AdditionalBeanBuildItem registerArcContainer(LaunchModeBuildItem launchMode) {
-        if (launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT) {
-            return AdditionalBeanBuildItem.unremovableOf(DevConsoleProvider.class);
-        }
-        return null;
+
+    @BuildStep(onlyIf = IsDevelopment.class)
+    @Record(ExecutionTime.STATIC_INIT)
+    public RuntimeTemplateInfoBuildItem collectBeanInfo(ArcRecorder recorder) {
+        return new RuntimeTemplateInfoBuildItem("io.quarkus", "quarkus-arc", "arcContainer", new ArcContainerSupplier());
     }
 
-    @Record(RUNTIME_INIT)
-    @BuildStep
-    public void collectBeanInfo(DevConsoleRecorder recorder,
-            LaunchModeBuildItem launchMode,
-            ValidationPhaseBuildItem validationPhaseBuildItem) {
-        if (launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT) {
-            DevBeanInfos beanInfos = new DevBeanInfos();
-            for (BeanInfo beanInfo : validationPhaseBuildItem.getContext().beans().collect()) {
-                beanInfos.addBeanInfo(makeBeanInfo(beanInfo));
-            }
-            for (BeanInfo beanInfo : validationPhaseBuildItem.getContext().removedBeans().collect()) {
-                beanInfos.addRemovedBeanInfo(makeBeanInfo(beanInfo));
-            }
-            recorder.setDevBeanInfos(beanInfos);
+    @BuildStep(onlyIf = IsDevelopment.class)
+    public TemplateInfoBuildItem collectBeanInfo(ValidationPhaseBuildItem validationPhaseBuildItem) {
+        DevBeanInfos beanInfos = new DevBeanInfos();
+        for (BeanInfo beanInfo : validationPhaseBuildItem.getContext().beans().collect()) {
+            beanInfos.addBeanInfo(makeBeanInfo(beanInfo));
         }
+        for (BeanInfo beanInfo : validationPhaseBuildItem.getContext().removedBeans().collect()) {
+            beanInfos.addRemovedBeanInfo(makeBeanInfo(beanInfo));
+        }
+        return new TemplateInfoBuildItem("io.quarkus", "quarkus-arc", "devBeanInfos", beanInfos);
     }
 
     private DevBeanInfo makeBeanInfo(BeanInfo beanInfo) {

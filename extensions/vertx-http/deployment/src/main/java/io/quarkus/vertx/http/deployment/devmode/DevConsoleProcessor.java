@@ -1,5 +1,9 @@
 package io.quarkus.vertx.http.deployment.devmode;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.jboss.logging.Logger;
 
 import io.netty.bootstrap.ServerBootstrap;
@@ -9,12 +13,18 @@ import io.netty.channel.ChannelInitializer;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.dev.console.DevConsoleManager;
+import io.quarkus.devconsole.spi.RuntimeTemplateInfoBuildItem;
+import io.quarkus.devconsole.spi.TemplateInfoBuildItem;
 import io.quarkus.netty.runtime.virtual.VirtualChannel;
 import io.quarkus.netty.runtime.virtual.VirtualServerChannel;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.devmode.DevConsoleFilter;
+import io.quarkus.vertx.http.runtime.devmode.DevConsoleRecorder;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServerOptions;
@@ -123,4 +133,22 @@ public class DevConsoleProcessor {
 
     }
 
+    @BuildStep(onlyIf = IsDevelopment.class)
+    public ServiceStartBuildItem buildTimeTemplates(List<TemplateInfoBuildItem> items) {
+        Map<String, Map<String, Object>> results = new HashMap<>();
+        for (TemplateInfoBuildItem i : items) {
+            Map<String, Object> map = results.computeIfAbsent(i.getGroupId() + "." + i.getArtifactId(), (s) -> new HashMap<>());
+            map.put(i.getName(), i.getObject());
+        }
+        DevConsoleManager.setTemplateInfo(results);
+        return null;
+    }
+
+    @BuildStep(onlyIf = IsDevelopment.class)
+    @Record(ExecutionTime.RUNTIME_INIT)
+    public void runtimeTemplates(List<RuntimeTemplateInfoBuildItem> items, DevConsoleRecorder recorder) {
+        for (RuntimeTemplateInfoBuildItem i : items) {
+            recorder.addInfo(i.getGroupId(), i.getArtifactId(), i.getName(), i.getObject());
+        }
+    }
 }
