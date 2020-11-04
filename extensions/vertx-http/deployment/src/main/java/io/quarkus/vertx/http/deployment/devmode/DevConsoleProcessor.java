@@ -1,6 +1,5 @@
 package io.quarkus.vertx.http.deployment.devmode;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,10 +12,10 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.recording.BytecodeRecorderImpl;
 import io.quarkus.dev.console.DevConsoleManager;
@@ -140,16 +139,6 @@ public class DevConsoleProcessor {
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
-    public RouteBuildItem setupBuildStep(LaunchModeBuildItem launchModeBuildItem) {
-        if (!launchModeBuildItem.getLaunchMode().isDevOrTest()) {
-            return null;
-        }
-        DevConsoleManager.registerHandler(new DevConsoleHttpHandler());
-        return new RouteBuildItem("/@dev/*", new DevConsoleFilter());
-
-    }
-
-    @BuildStep(onlyIf = IsDevelopment.class)
     public ServiceStartBuildItem buildTimeTemplates(List<DevConsoleTemplateInfoBuildItem> items) {
         Map<String, Map<String, Object>> results = new HashMap<>();
         for (DevConsoleTemplateInfoBuildItem i : items) {
@@ -170,13 +159,13 @@ public class DevConsoleProcessor {
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
-    public List<RouteBuildItem> setupActions(List<DevConsoleRouteBuildItem> routes) {
+    public void setupActions(List<DevConsoleRouteBuildItem> routes,
+            BuildProducer<RouteBuildItem> routeBuildItemBuildProducer) {
         initializeVirtual();
         newRouter();
-        List<RouteBuildItem> runtimeRoutes = new ArrayList<>();
         for (DevConsoleRouteBuildItem i : routes) {
             if (i.getHandler() instanceof BytecodeRecorderImpl.ReturnedProxy) {
-                runtimeRoutes.add(new RouteBuildItem(
+                routeBuildItemBuildProducer.produce(new RouteBuildItem(
                         new RuntimeDevConsoleRoute(i.getGroupId(), i.getArtifactId(), i.getPath(), i.getMethod()),
                         i.getHandler()));
             } else {
@@ -185,6 +174,9 @@ public class DevConsoleProcessor {
                         .handler(i.getHandler());
             }
         }
-        return runtimeRoutes;
+
+        DevConsoleManager.registerHandler(new DevConsoleHttpHandler());
+        //must be last so the above routes have precedence
+        routeBuildItemBuildProducer.produce(new RouteBuildItem("/@dev/*", new DevConsoleFilter()));
     }
 }

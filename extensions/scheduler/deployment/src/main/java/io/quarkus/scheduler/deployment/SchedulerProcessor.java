@@ -71,8 +71,7 @@ import io.quarkus.scheduler.runtime.SchedulerConfig;
 import io.quarkus.scheduler.runtime.SchedulerContext;
 import io.quarkus.scheduler.runtime.SchedulerRecorder;
 import io.quarkus.scheduler.runtime.SimpleScheduler;
-import io.vertx.core.Handler;
-import io.vertx.ext.web.RoutingContext;
+import io.quarkus.scheduler.runtime.devconsole.SchedulerDevConsoleRecorder;
 
 /**
  * @author Martin Kouba
@@ -237,14 +236,8 @@ public class SchedulerProcessor {
 
     @BuildStep
     @Record(STATIC_INIT)
-    DevConsoleRouteBuildItem invokeEndpoint(SchedulerRecorder recorder) {
-        return new DevConsoleRouteBuildItem("schedules", "POST",
-                new Handler<RoutingContext>() {
-                    @Override
-                    public void handle(RoutingContext event) {
-                        event.response().end("hello");
-                    }
-                });
+    DevConsoleRouteBuildItem invokeEndpoint(SchedulerDevConsoleRecorder recorder) {
+        return new DevConsoleRouteBuildItem("schedules", "POST", recorder.invokeHandler());
     }
 
     private String generateInvoker(ScheduledBusinessMethodItem scheduledMethod, ClassOutput classOutput) {
