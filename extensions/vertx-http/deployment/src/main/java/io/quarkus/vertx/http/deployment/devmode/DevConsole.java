@@ -134,11 +134,12 @@ public class DevConsole implements Handler<RoutingContext> {
                 URL extensionDescriptor = extensionDescriptors.nextElement();
                 String desc = readURL(extensionDescriptor);
                 Map<String, Object> loaded = yaml.load(desc);
+                @SuppressWarnings("unchecked")
                 Map<String, Object> metadata = (Map<String, Object>) loaded.get("metadata");
                 Boolean unlisted = (Boolean) metadata.get("unlisted");
                 String artifactId = (String) loaded.get("artifact-id");
                 String groupId = (String) loaded.get("group-id");
-                currentExtension.set(groupId + "." + artifactId);
+                currentExtension.set(groupId + "." + artifactId); // needed because the template of the extension is going to be read
                 URL extensionSimple = getClass().getClassLoader()
                         .getResource("/dev-templates/" + groupId + "." + artifactId + "/" + artifactId + ".html");
                 boolean display = (unlisted == null || !unlisted) || extensionSimple != null || metadata.containsKey("guide");
