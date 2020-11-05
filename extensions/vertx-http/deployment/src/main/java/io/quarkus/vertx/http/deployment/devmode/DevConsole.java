@@ -1,8 +1,6 @@
 package io.quarkus.vertx.http.deployment.devmode;
 
 import java.io.IOException;
-import java.io.Reader;
-import java.io.StringReader;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -11,23 +9,15 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Scanner;
 import java.util.function.BiFunction;
 
 import org.yaml.snakeyaml.Yaml;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
-import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.qute.Engine;
-import io.quarkus.qute.NamespaceResolver;
-import io.quarkus.qute.ReflectionValueResolver;
-import io.quarkus.qute.Results;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
-import io.quarkus.qute.TemplateLocator;
-import io.quarkus.qute.ValueResolvers;
-import io.quarkus.qute.Variant;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
@@ -37,75 +27,34 @@ import io.vertx.ext.web.RoutingContext;
  */
 public class DevConsole implements Handler<RoutingContext> {
 
-    private static final ThreadLocal<String> currentExtension = new ThreadLocal<>();
+    static final ThreadLocal<String> currentExtension = new ThreadLocal<>();
 
-    static final Engine engine = Engine.builder().addDefaultSectionHelpers().addDefaultValueResolvers()
-            .addValueResolver(new ReflectionValueResolver())
-            .addValueResolver(ValueResolvers.rawResolver())
-            .addNamespaceResolver(NamespaceResolver.builder("info").resolve(ctx -> {
-                String ext = currentExtension.get();
-                if (ext == null) {
-                    return Results.Result.NOT_FOUND;
-                }
-                Map<String, Object> map = DevConsoleManager.getTemplateInfo().get(ext);
-                if (map == null) {
-                    return Results.Result.NOT_FOUND;
-                }
-                Object result = map.get(ctx.getName());
-                return result == null ? Results.Result.NOT_FOUND : result;
-            }).build())
-            .addLocator(DevConsole::locateTemplate)
-            .build();
+    final Engine engine;
+
+    DevConsole(Engine engine) {
+        this.engine = engine;
+    }
 
     @Override
     public void handle(RoutingContext event) {
-        try {
-            String path = event.normalisedPath().substring(event.mountPoint().length());
-            if (path.isEmpty() || path.equals("/")) {
-                sendMainPage(event);
-            } else {
-                int nsIndex = path.indexOf("/");
-                if (nsIndex == -1) {
-                    event.response().setStatusCode(404).end();
-                    return;
-                }
-                String namespace = path.substring(0, nsIndex);
-                currentExtension.set(namespace);
-                URL url = getClass().getClassLoader().getResource("/dev-templates/" + path + ".html");
-                if (url != null) {
-                    Template template = readTemplate(url);
-                    event.response().setStatusCode(200).headers().set(HttpHeaderNames.CONTENT_TYPE, "text/html; charset=UTF-8");
-                    renderTemplate(event, template.instance());
-                } else {
-                    event.next();
-                }
+        String path = event.normalisedPath().substring(event.mountPoint().length());
+        if (path.isEmpty() || path.equals("/")) {
+            sendMainPage(event);
+        } else {
+            int nsIndex = path.indexOf("/");
+            if (nsIndex == -1) {
+                event.response().setStatusCode(404).end();
+                return;
             }
-        } catch (IOException e) {
-            event.fail(e);
-        }
-    }
-
-    private static Optional<TemplateLocator.TemplateLocation> locateTemplate(String id) {
-        URL url = DevConsole.class.getClassLoader().getResource("/dev-templates/" + id + ".html");
-        if (url == null)
-            return Optional.empty();
-        try {
-            String data = readURL(url);
-            return Optional.of(new TemplateLocator.TemplateLocation() {
-
-                @Override
-                public Reader read() {
-                    return new StringReader(data);
-                }
-
-                @Override
-                public Optional<Variant> getVariant() {
-                    return Optional.empty();
-                }
-            });
-        } catch (IOException e) {
-            e.printStackTrace();
-            return Optional.empty();
+            String namespace = path.substring(0, nsIndex);
+            currentExtension.set(namespace);
+            Template devTemplate = engine.getTemplate(path);
+            if (devTemplate != null) {
+                event.response().setStatusCode(200).headers().set(HttpHeaderNames.CONTENT_TYPE, "text/html; charset=UTF-8");
+                renderTemplate(event, devTemplate.instance());
+            } else {
+                event.next();
+            }
         }
     }
 
@@ -125,7 +74,7 @@ public class DevConsole implements Handler<RoutingContext> {
 
     public void sendMainPage(RoutingContext event) {
         try {
-            Template devTemplate = readTemplate("/dev-templates/index.html");
+            Template devTemplate = engine.getTemplate("index");
             Enumeration<URL> extensionDescriptors = getClass().getClassLoader()
                     .getResources("/META-INF/quarkus-extension.yaml");
             List<Map<String, Object>> extensions = new ArrayList<>();
@@ -140,15 +89,13 @@ public class DevConsole implements Handler<RoutingContext> {
                 String artifactId = (String) loaded.get("artifact-id");
                 String groupId = (String) loaded.get("group-id");
                 currentExtension.set(groupId + "." + artifactId); // needed because the template of the extension is going to be read
-                URL extensionSimple = getClass().getClassLoader()
-                        .getResource("/dev-templates/" + groupId + "." + artifactId + "/" + artifactId + ".html");
-                boolean display = (unlisted == null || !unlisted) || extensionSimple != null || metadata.containsKey("guide");
+                Template simpleTemplate = engine.getTemplate(groupId + "." + artifactId + "/" + artifactId + ".html");
+                boolean display = (unlisted == null || !unlisted) || simpleTemplate != null || metadata.containsKey("guide");
                 if (display) {
-                    if (extensionSimple != null) {
-                        Template template = readTemplate(extensionSimple);
+                    if (simpleTemplate != null) {
                         Map<String, Object> data = new HashMap<>();
                         data.put("urlbase", groupId + "." + artifactId + "/");
-                        String result = template.render(data);
+                        String result = simpleTemplate.render(data);
                         loaded.put("_dev", result);
                     }
                     extensions.add(loaded);
@@ -161,15 +108,6 @@ public class DevConsole implements Handler<RoutingContext> {
             event.fail(e);
 
         }
-    }
-
-    private Template readTemplate(String path) throws IOException {
-        URL url = getClass().getClassLoader().getResource(path);
-        return readTemplate(url);
-    }
-
-    private Template readTemplate(URL url) throws IOException {
-        return engine.parse(readURL(url));
     }
 
     private static String readURL(URL url) throws IOException {
