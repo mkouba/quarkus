@@ -9,7 +9,6 @@ public class DevConsoleManager {
 
     private static volatile Consumer<DevConsoleRequest> handler;
     private static volatile Function<String, Object> resolver;
-    private static volatile Object arcContainer;
     private static volatile Map<String, Map<String, Object>> templateInfo;
 
     public static void registerHandler(Consumer<DevConsoleRequest> requestHandler) {
