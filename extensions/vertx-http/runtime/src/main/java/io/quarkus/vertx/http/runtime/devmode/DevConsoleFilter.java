@@ -29,18 +29,9 @@ import io.vertx.ext.web.RoutingContext;
 public class DevConsoleFilter implements Handler<RoutingContext> {
 
     private static final Logger log = Logger.getLogger(DevConsoleFilter.class);
-    public static final Function<String, Object> RESOLVER = new Function<String, Object>() {
-        @Override
-        public Object apply(String s) {
-            InstanceHandle<Object> bean = Arc.container().instance(s);
-            return bean.isAvailable() ? bean.get() : null;
-        }
-    };
 
     @Override
     public void handle(RoutingContext event) {
-        //TODO: fixme, should be set on startup
-        DevConsoleManager.setResolver(RESOLVER);
         Map<String, List<String>> headers = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         for (Map.Entry<String, String> entry : event.request().headers()) {
             headers.put(entry.getKey(), event.request().headers().getAll(entry.getKey()));

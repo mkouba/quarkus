@@ -37,10 +37,6 @@ public class DevConsole implements Handler<RoutingContext> {
     static final Engine engine = Engine.builder().addDefaultSectionHelpers().addDefaultValueResolvers()
             .addValueResolver(new ReflectionValueResolver())
             .addValueResolver(ValueResolvers.rawResolver())
-            .addNamespaceResolver(NamespaceResolver.builder("inject").resolve(ctx -> {
-                Object result = DevConsoleManager.resolve(ctx.getName());
-                return result == null ? Results.Result.NOT_FOUND : result;
-            }).build())
             .addNamespaceResolver(NamespaceResolver.builder("info").resolve(ctx -> {
                 String ext = currentExtension.get();
                 if (ext == null) {
