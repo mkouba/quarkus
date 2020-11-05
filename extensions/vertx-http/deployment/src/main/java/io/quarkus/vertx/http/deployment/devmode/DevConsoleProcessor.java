@@ -164,6 +164,7 @@ public class DevConsoleProcessor {
         initializeVirtual();
         newRouter();
         for (DevConsoleRouteBuildItem i : routes) {
+            // if the handler is a proxy, then that means it's been produced by a recorder and therefore belongs in the regular runtime Vert.x instance
             if (i.getHandler() instanceof BytecodeRecorderImpl.ReturnedProxy) {
                 routeBuildItemBuildProducer.produce(new RouteBuildItem(
                         new RuntimeDevConsoleRoute(i.getGroupId(), i.getArtifactId(), i.getPath(), i.getMethod()),
