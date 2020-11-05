@@ -17,33 +17,10 @@
     {#for bean in info:devBeanInfos.removedBeanInfos}
     <tr>
       <td>
-       {#if bean.scope.name != 'javax.enterprise.context.Dependent'}
-        <span class="annotation" title="{bean.scope.name}">@{bean.scope.localName}</span><br/>
-       {/if}
-       {#for qual in bean.qualifiers}
-        {#if qual.name != 'javax.inject.Named'}
-        {#if qual.name != 'javax.enterprise.inject.Any'}
-        {#if qual.name != 'javax.enterprise.inject.Default'}
-          <span class="annotation" title="{qual.name}">@{qual.localName}</span><br/>
-        {/if}
-        {/if}
-        {/if}
-       {/for}
-       <span title="{bean.type.name}">{bean.type.localName}</span>
+       {#display-bean bean/}
       </td>
       <td>
-       {#if bean.kind.name() == 'METHOD'}
-        <span title="{bean.name.name}">{bean.name.localName}</span>.{bean.methodName}()
-       {/if}
-       {#if bean.kind.name() == 'FIELD'}
-        <span title="{bean.name.name}">{bean.name.localName}</span>.{bean.methodName}
-       {/if}
-       {#if bean.kind.name() == 'CLASS'}
-        <span class="badge badge-secondary">Class</span>
-       {/if}
-       {#if bean.kind.name() == 'SYNTHETIC'}
-        <span class="badge badge-secondary">Synthetic</span>
-       {/if}
+       {#bean-declaration bean/}
       </td>
     {/for}
    </tbody>
