@@ -1,6 +1,8 @@
 package io.quarkus.vertx.http.deployment.devmode;
 
 import java.io.IOException;
+import java.io.Reader;
+import java.io.StringReader;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -9,6 +11,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Scanner;
 import java.util.function.BiFunction;
 
@@ -22,7 +25,9 @@ import io.quarkus.qute.ReflectionValueResolver;
 import io.quarkus.qute.Results;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
+import io.quarkus.qute.TemplateLocator;
 import io.quarkus.qute.ValueResolvers;
+import io.quarkus.qute.Variant;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
@@ -49,6 +54,7 @@ public class DevConsole implements Handler<RoutingContext> {
                 Object result = map.get(ctx.getName());
                 return result == null ? Results.Result.NOT_FOUND : result;
             }).build())
+            .addLocator(id -> locateTemplate(id))
             .build();
 
     @Override
@@ -76,6 +82,30 @@ public class DevConsole implements Handler<RoutingContext> {
             }
         } catch (IOException e) {
             event.fail(e);
+        }
+    }
+
+    private static Optional<TemplateLocator.TemplateLocation> locateTemplate(String id) {
+        URL url = DevConsole.class.getClassLoader().getResource("/dev-templates/" + id + ".html");
+        if (url == null)
+            return Optional.empty();
+        try {
+            String data = readURL(url);
+            return Optional.of(new TemplateLocator.TemplateLocation() {
+
+                @Override
+                public Reader read() {
+                    return new StringReader(data);
+                }
+
+                @Override
+                public Optional<Variant> getVariant() {
+                    return Optional.empty();
+                }
+            });
+        } catch (IOException e) {
+            e.printStackTrace();
+            return Optional.empty();
         }
     }
 
@@ -143,7 +173,7 @@ public class DevConsole implements Handler<RoutingContext> {
         return engine.parse(readURL(url));
     }
 
-    private String readURL(URL url) throws IOException {
+    private static String readURL(URL url) throws IOException {
         try (Scanner scanner = new Scanner(url.openStream(),
                 StandardCharsets.UTF_8.toString())) {
             scanner.useDelimiter("\\A");
