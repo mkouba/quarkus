@@ -6,7 +6,7 @@ import java.io.StringReader;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
@@ -54,7 +54,7 @@ public class DevConsole implements Handler<RoutingContext> {
                 Object result = map.get(ctx.getName());
                 return result == null ? Results.Result.NOT_FOUND : result;
             }).build())
-            .addLocator(id -> locateTemplate(id))
+            .addLocator(DevConsole::locateTemplate)
             .build();
 
     @Override
@@ -153,9 +153,7 @@ public class DevConsole implements Handler<RoutingContext> {
                     extensions.add(loaded);
                 }
             }
-            Collections.sort(extensions, (a, b) -> {
-                return ((String) a.get("name")).compareTo((String) b.get("name"));
-            });
+            extensions.sort(Comparator.comparing(m -> ((String) m.get("name"))));
             TemplateInstance instance = devTemplate.data("extensions", extensions);
             renderTemplate(event, instance);
         } catch (IOException e) {
@@ -177,8 +175,7 @@ public class DevConsole implements Handler<RoutingContext> {
         try (Scanner scanner = new Scanner(url.openStream(),
                 StandardCharsets.UTF_8.toString())) {
             scanner.useDelimiter("\\A");
-            String templateBody = scanner.hasNext() ? scanner.next() : null;
-            return templateBody;
+            return scanner.hasNext() ? scanner.next() : null;
         }
     }
 

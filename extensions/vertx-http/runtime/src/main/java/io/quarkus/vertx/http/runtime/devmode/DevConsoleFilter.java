@@ -7,12 +7,9 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.InstanceHandle;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.dev.console.DevConsoleRequest;
 import io.quarkus.dev.console.DevConsoleResponse;
