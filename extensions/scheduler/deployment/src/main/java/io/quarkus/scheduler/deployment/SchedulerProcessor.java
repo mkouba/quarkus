@@ -235,7 +235,7 @@ public class SchedulerProcessor {
     }
 
     @BuildStep
-    @Record(value = STATIC_INIT,optional = true)
+    @Record(value = STATIC_INIT, optional = true)
     DevConsoleRouteBuildItem invokeEndpoint(SchedulerDevConsoleRecorder recorder) {
         return new DevConsoleRouteBuildItem("schedules", "POST", recorder.invokeHandler());
     }
