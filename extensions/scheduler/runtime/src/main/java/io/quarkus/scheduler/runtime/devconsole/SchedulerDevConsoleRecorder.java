@@ -17,6 +17,8 @@ import io.vertx.ext.web.RoutingContext;
 public class SchedulerDevConsoleRecorder {
 
     public Handler<RoutingContext> invokeHandler() {
+        // the usual issue of Vert.x hanging on to the first TCCL and setting it on all its threads
+        final ClassLoader currentCl = Thread.currentThread().getContextClassLoader();
         return new Handler<RoutingContext>() {
             @Override
             public void handle(RoutingContext event) {
@@ -25,6 +27,7 @@ public class SchedulerDevConsoleRecorder {
                     @Override
                     public void handle(Buffer buf) {
                         try {
+                            Thread.currentThread().setContextClassLoader(currentCl);
                             String name = event.request().formAttributes().get("name");
                             SchedulerContext context = Arc.container().instance(SchedulerContext.class).get();
                             for (ScheduledMethodMetadata i : context.getScheduledMethods()) {
