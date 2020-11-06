@@ -136,6 +136,10 @@ public class CaffeineCache {
         return expireAfterAccess;
     }
 
+    public long getSize() {
+        return cache.synchronous().estimatedSize();
+    }
+
     /**
      * Returns the unique and immutable default key for the current cache. This key is used by the annotations caching API when
      * a no-args method annotated with {@link io.quarkus.cache.CacheResult CacheResult} or

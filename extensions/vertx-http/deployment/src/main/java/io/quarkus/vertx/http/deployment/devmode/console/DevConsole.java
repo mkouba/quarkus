@@ -103,7 +103,15 @@ public class DevConsole implements Handler<RoutingContext> {
         for (Map<String, Object> loaded : this.extensions.values()) {
             @SuppressWarnings("unchecked")
             Map<String, Object> metadata = (Map<String, Object>) loaded.get("metadata");
-            Boolean unlisted = (Boolean) metadata.get("unlisted");
+            Boolean unlisted = null;
+            Object unlistedObj = metadata.get("unlisted");
+            if (unlistedObj != null) {
+                if (unlistedObj instanceof Boolean) {
+                    unlisted = (Boolean) unlistedObj;
+                } else {
+                    unlisted = Boolean.valueOf(unlistedObj.toString());
+                }
+            }
             String artifactId = (String) loaded.get("artifact-id");
             String groupId = (String) loaded.get("group-id");
             currentExtension.set(groupId + "." + artifactId); // needed because the template of the extension is going to be read

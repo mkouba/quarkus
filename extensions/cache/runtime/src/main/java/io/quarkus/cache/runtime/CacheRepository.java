@@ -1,5 +1,6 @@
 package io.quarkus.cache.runtime;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
@@ -22,5 +23,9 @@ public class CacheRepository {
 
     public CaffeineCache getCache(String cacheName) {
         return caches.get(cacheName);
+    }
+
+    public Collection<CaffeineCache> getAllCaches() {
+        return caches.values();
     }
 }

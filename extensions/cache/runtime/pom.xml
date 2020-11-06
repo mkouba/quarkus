@@ -28,6 +28,11 @@
             <groupId>org.eclipse.microprofile.context-propagation</groupId>
             <artifactId>microprofile-context-propagation-api</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-web</artifactId>
+            <optional>true</optional>
+        </dependency>
     </dependencies>
 
     <build>

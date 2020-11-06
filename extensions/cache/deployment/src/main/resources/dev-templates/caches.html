@@ -1,0 +1,33 @@
+{#include main}
+{#style}
+.annotation {
+color: gray;
+}
+{/style}
+{#title}Quarkus Cache{/title}
+{#body}
+<table class="table table-striped">
+    <thead class="thead-dark">
+    <tr>
+        <th scope="col">Name</th>
+        <th scope="col">Size</th>
+    </tr>
+    </thead>
+    <tbody>
+    {#for cacheInfo in info:cacheInfos}
+    <tr>
+        <td>
+            {cacheInfo.name}
+        </td>
+        <td>
+            {cacheInfo.size}
+            <form method="post"  enctype="application/x-www-form-urlencoded">
+                <input type="hidden" name="name" value="{cacheInfo.name}">
+                <input type="submit" value="Clear" >
+            </form>
+        </td>
+    {/for}
+    </tbody>
+</table>
+{/body}
+{/include}
