@@ -11,6 +11,7 @@ public class DevConsoleManager {
     private static volatile Consumer<DevConsoleRequest> handler;
     private static volatile Map<String, Map<String, Object>> templateInfo;
     private static volatile HotReplacementContext hotReplacementContext;
+    private static volatile Object quarkusBootstrap;
 
     public static void registerHandler(Consumer<DevConsoleRequest> requestHandler) {
         handler = requestHandler;
@@ -39,5 +40,13 @@ public class DevConsoleManager {
 
     public static void setHotReplacementContext(HotReplacementContext hotReplacementContext) {
         DevConsoleManager.hotReplacementContext = hotReplacementContext;
+    }
+
+    public static void setQuarkusBootstrap(Object qb) {
+        quarkusBootstrap = qb;
+    }
+
+    public static Object getQuarkusBootstrap() {
+        return quarkusBootstrap;
     }
 }

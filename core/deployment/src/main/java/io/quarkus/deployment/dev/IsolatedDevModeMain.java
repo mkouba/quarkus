@@ -226,6 +226,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                 service.setupHotDeployment(processor);
                 processor.addHotReplacementSetup(service);
             }
+            DevConsoleManager.setQuarkusBootstrap(curatedApplication.getQuarkusBootstrap());
             DevConsoleManager.setHotReplacementContext(processor);
             return processor;
         }
