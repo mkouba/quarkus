@@ -24,47 +24,53 @@ public class SchedulerDevConsoleRecorder {
                 event.request().bodyHandler(new Handler<Buffer>() {
                     @Override
                     public void handle(Buffer buf) {
-                        String name = event.request().formAttributes().get("name");
-                        SchedulerContext context = Arc.container().instance(SchedulerContext.class).get();
-                        for (ScheduledMethodMetadata i : context.getScheduledMethods()) {
-                            if (i.getMethodDescription().equals(name)) {
-                                ScheduledInvoker invoker = context.createInvoker(i.getInvokerClassName());
-                                Instant now = Instant.now();
-                                invoker.invoke(new ScheduledExecution() {
-                                    @Override
-                                    public Trigger getTrigger() {
-                                        return new Trigger() {
+                        try {
+                            String name = event.request().formAttributes().get("name");
+                            SchedulerContext context = Arc.container().instance(SchedulerContext.class).get();
+                            for (ScheduledMethodMetadata i : context.getScheduledMethods()) {
+                                if (i.getMethodDescription().equals(name)) {
+                                    ScheduledInvoker invoker = context.createInvoker(i.getInvokerClassName());
+                                    Instant now = Instant.now();
+                                    invoker.invoke(new ScheduledExecution() {
+                                        @Override
+                                        public Trigger getTrigger() {
+                                            return new Trigger() {
 
-                                            @Override
-                                            public String getId() {
-                                                return "dev-console";
-                                            }
+                                                @Override
+                                                public String getId() {
+                                                    return "dev-console";
+                                                }
 
-                                            @Override
-                                            public Instant getNextFireTime() {
-                                                return null;
-                                            }
+                                                @Override
+                                                public Instant getNextFireTime() {
+                                                    return null;
+                                                }
 
-                                            @Override
-                                            public Instant getPreviousFireTime() {
-                                                return now;
-                                            }
-                                        };
-                                    }
+                                                @Override
+                                                public Instant getPreviousFireTime() {
+                                                    return now;
+                                                }
+                                            };
+                                        }
 
-                                    @Override
-                                    public Instant getFireTime() {
-                                        return now;
-                                    }
+                                        @Override
+                                        public Instant getFireTime() {
+                                            return now;
+                                        }
 
-                                    @Override
-                                    public Instant getScheduledFireTime() {
-                                        return now;
-                                    }
-                                });
-                                event.response().setStatusCode(204).end();
-                                return;
+                                        @Override
+                                        public Instant getScheduledFireTime() {
+                                            return now;
+                                        }
+                                    });
+                                    event.response().setStatusCode(204).end();
+                                    return;
+                                }
                             }
+                            event.response().setStatusCode(404).end();
+                        } catch (Throwable t) {
+                            t.printStackTrace();
+                            event.response().setStatusCode(500).end();
                         }
                     }
                 });

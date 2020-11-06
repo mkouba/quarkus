@@ -62,6 +62,6 @@ public class RuntimeDevConsoleRoute implements Function<Router, Route> {
     @Override
     public Route apply(Router route) {
         return route.route(HttpMethod.valueOf(method), "/@dev/" + groupId + "." + artifactId + "/" + path)
-                .order(Integer.MIN_VALUE);
+                .order(-100);
     }
 }

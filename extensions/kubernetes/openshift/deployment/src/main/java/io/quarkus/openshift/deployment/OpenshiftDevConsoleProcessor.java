@@ -1,4 +1,4 @@
-package io.quarkus.container.image.openshift.deployment.devconsole;
+package io.quarkus.openshift.deployment;
 
 import java.util.Collections;
 
