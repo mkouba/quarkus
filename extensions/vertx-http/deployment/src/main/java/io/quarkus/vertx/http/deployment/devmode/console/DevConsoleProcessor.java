@@ -18,6 +18,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -36,6 +37,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.recording.BytecodeRecorderImpl;
+import io.quarkus.deployment.util.ArtifactInfoUtil;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
@@ -328,6 +330,17 @@ public class DevConsoleProcessor {
     }
 
     private void scanTemplates(FileSystem fs, BuildProducer<DevTemplatePathBuildItem> devTemplatePaths) throws IOException {
+        Entry<String, String> entry = ArtifactInfoUtil.groupIdAndArtifactId(fs);
+        if (entry == null) {
+            throw new RuntimeException("Artifact at " + fs + " is missing pom metadata");
+        }
+        String prefix;
+        // don't move stuff for our "root" dev console artifact, since it includes the main template
+        if (entry.getKey().equals("io.quarkus")
+                && entry.getValue().equals("quarkus-vertx-http"))
+            prefix = "";
+        else
+            prefix = entry.getKey() + "." + entry.getValue() + "/";
         for (Path root : fs.getRootDirectories()) {
             Path devTemplatesPath = fs.getPath("/dev-templates");
             Files.walkFileTree(root, new SimpleFileVisitor<Path>() {
@@ -341,8 +354,15 @@ public class DevConsoleProcessor {
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                     String contents = new String(Files.readAllBytes(file), StandardCharsets.UTF_8);
+                    // don't move tags yet, since we don't know how to use them afterwards
+                    String relativePath = devTemplatesPath.relativize(file).toString();
+                    String correctedPath;
+                    if (relativePath.startsWith(DevTemplatePathBuildItem.TAGS))
+                        correctedPath = relativePath;
+                    else
+                        correctedPath = prefix + relativePath;
                     devTemplatePaths
-                            .produce(new DevTemplatePathBuildItem(devTemplatesPath.relativize(file).toString(), contents));
+                            .produce(new DevTemplatePathBuildItem(correctedPath, contents));
                     return super.visitFile(file, attrs);
                 }
             });

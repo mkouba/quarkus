@@ -89,7 +89,7 @@ public class DevConsole implements Handler<RoutingContext> {
                 String artifactId = (String) loaded.get("artifact-id");
                 String groupId = (String) loaded.get("group-id");
                 currentExtension.set(groupId + "." + artifactId); // needed because the template of the extension is going to be read
-                Template simpleTemplate = engine.getTemplate(groupId + "." + artifactId + "/" + artifactId + ".html");
+                Template simpleTemplate = engine.getTemplate(groupId + "." + artifactId + "/embedded.html");
                 boolean display = (unlisted == null || !unlisted) || simpleTemplate != null || metadata.containsKey("guide");
                 if (display) {
                     if (simpleTemplate != null) {
