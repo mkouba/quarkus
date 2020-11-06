@@ -18,7 +18,7 @@ color: gray;
     </thead>
     <tbody>
     {#for item in info:config}
-    <tr>
+    <tr class="{item.appPropertiesValue ? 'table-info' : ''}">
         <form method="post" enctype="application/x-www-form-urlencoded">
             <input type="hidden" name="name" value="{item.propertyName}"/>
             <td>
