@@ -15,6 +15,7 @@ import java.util.function.BiFunction;
 import org.yaml.snakeyaml.Yaml;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
+import io.quarkus.devconsole.spi.FlashScopeUtil;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
@@ -69,7 +70,8 @@ public class DevConsole implements Handler<RoutingContext> {
             if (devTemplate != null) {
                 String extName = getExtensionName(namespace);
                 event.response().setStatusCode(200).headers().set(HttpHeaderNames.CONTENT_TYPE, "text/html; charset=UTF-8");
-                renderTemplate(event, devTemplate.data("currentExtensionName", extName));
+                renderTemplate(event,
+                        devTemplate.data("currentExtensionName", extName).data("flash", FlashScopeUtil.getFlash(event)));
             } else {
                 event.next();
             }
@@ -128,7 +130,7 @@ public class DevConsole implements Handler<RoutingContext> {
             }
         }
         extensions.sort(Comparator.comparing(m -> ((String) m.get("name"))));
-        TemplateInstance instance = devTemplate.data("extensions", extensions);
+        TemplateInstance instance = devTemplate.data("extensions", extensions).data("flash", FlashScopeUtil.getFlash(event));
         renderTemplate(event, instance);
     }
 

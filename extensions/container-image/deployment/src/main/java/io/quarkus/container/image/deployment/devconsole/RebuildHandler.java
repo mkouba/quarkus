@@ -6,7 +6,9 @@ import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.dev.console.TempSystemProperties;
+import io.quarkus.devconsole.spi.FlashScopeUtil;
 import io.vertx.core.Handler;
+import io.vertx.core.http.HttpHeaders;
 import io.vertx.ext.web.RoutingContext;
 
 public class RebuildHandler implements Handler<RoutingContext> {
@@ -40,7 +42,11 @@ public class RebuildHandler implements Handler<RoutingContext> {
                             try (CuratedApplication bootstrap = quarkusBootstrap.bootstrap()) {
                                 bootstrap
                                         .createAugmentor().createProductionApplication();
-                                event.response().end("Deployment Complete"); //TODO: FIXME, should give template output
+                                FlashScopeUtil.setFlashMessage(event, "Container created", "success");
+                                // redirect to GET
+                                event.response().putHeader(HttpHeaders.LOCATION, event.request().absoluteURI());
+                                event.response().setStatusCode(303);
+                                event.response().end();
                             }
                         } catch (Exception e) {
                             event.response().setStatusCode(500).end();

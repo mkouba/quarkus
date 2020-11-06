@@ -162,8 +162,11 @@ public class DevConsoleProcessor {
         };
         router = Router.router(devConsoleVertx);
         router.errorHandler(500, errorHandler);
-        router.route().method(HttpMethod.GET)
+        router.route()
                 .order(Integer.MIN_VALUE)
+                .handler(new FlashScopeHandler());
+        router.route().method(HttpMethod.GET)
+                .order(Integer.MIN_VALUE + 1)
                 .handler(new DevConsole(engine));
         mainRouter = Router.router(devConsoleVertx);
         mainRouter.errorHandler(500, errorHandler);
@@ -243,6 +246,7 @@ public class DevConsoleProcessor {
             Optional<DevTemplateVariantsBuildItem> devTemplateVariants) {
         EngineBuilder builder = Engine.builder().addDefaultSectionHelpers().addDefaultValueResolvers()
                 .addValueResolver(new ReflectionValueResolver())
+                .addValueResolver(new JsonObjectValueResolver())
                 .addValueResolver(ValueResolvers.rawResolver())
                 .addNamespaceResolver(NamespaceResolver.builder("info").resolve(ctx -> {
                     String ext = DevConsole.currentExtension.get();

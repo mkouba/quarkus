@@ -27,6 +27,11 @@
    </ol>
   </nav>
   <div class="container">
+   {#if flash['message']}
+     <div class="alert alert-{flash['message']['class']}" role="alert">
+      {flash['message']['text']}
+     </div>
+   {/if}
    <h1>{#insert title/}</h1>
    {#insert body/}
   </div>
