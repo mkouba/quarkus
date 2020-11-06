@@ -1,8 +1,10 @@
-package io.quarkus.vertx.http.deployment.devmode;
+package io.quarkus.vertx.http.deployment.devmode.console;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
@@ -128,6 +130,9 @@ public class DevConsoleHttpHandler implements Consumer<DevConsoleRequest> {
         QuarkusHttpHeaders quarkusHeaders = new QuarkusHttpHeaders();
         DefaultHttpRequest nettyRequest = new DefaultHttpRequest(HttpVersion.HTTP_1_1,
                 HttpMethod.valueOf(request.getMethod()), path, quarkusHeaders);
+        for (Map.Entry<String, List<String>> i : request.getHeaders().entrySet()) {
+            nettyRequest.headers().add(i.getKey(), i.getValue());
+        }
         if (!nettyRequest.headers().contains(HttpHeaderNames.HOST)) {
             nettyRequest.headers().add(HttpHeaderNames.HOST, "localhost");
         }

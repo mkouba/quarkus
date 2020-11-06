@@ -1,4 +1,4 @@
-package io.quarkus.vertx.http.deployment.devmode;
+package io.quarkus.vertx.http.deployment.devmode.console;
 
 import io.quarkus.builder.item.MultiBuildItem;
 

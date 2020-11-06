@@ -28,7 +28,7 @@
       </td>
       <td>
        {scheduledMethod.methodDescription}
-       <form method="post">
+       <form method="post"  enctype="application/x-www-form-urlencoded">
         <input type="hidden" name="name" value="{scheduledMethod.methodDescription}">
         <input type="submit" value="Invoke" >
        </form>

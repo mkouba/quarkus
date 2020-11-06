@@ -1,4 +1,4 @@
-package io.quarkus.vertx.http.deployment.devmode;
+package io.quarkus.vertx.http.deployment.devmode.console;
 
 import java.util.List;
 import java.util.Map;

@@ -1,4 +1,4 @@
-package io.quarkus.vertx.http.deployment.devmode;
+package io.quarkus.vertx.http.deployment.devmode.console;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -54,6 +54,7 @@ import io.quarkus.qute.Variant;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.devmode.DevConsoleFilter;
 import io.quarkus.vertx.http.runtime.devmode.DevConsoleRecorder;
+import io.quarkus.vertx.http.runtime.devmode.RedirectHandler;
 import io.quarkus.vertx.http.runtime.devmode.RuntimeDevConsoleRoute;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
@@ -233,6 +234,7 @@ public class DevConsoleProcessor {
         DevConsoleManager.registerHandler(new DevConsoleHttpHandler());
         //must be last so the above routes have precedence
         routeBuildItemBuildProducer.produce(new RouteBuildItem("/@dev/*", new DevConsoleFilter()));
+        routeBuildItemBuildProducer.produce(new RouteBuildItem("/@dev", new RedirectHandler()));
     }
 
     private Engine buildEngine(List<DevTemplatePathBuildItem> devTemplatePaths,

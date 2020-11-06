@@ -4,10 +4,13 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import io.quarkus.dev.spi.HotReplacementContext;
+
 public class DevConsoleManager {
 
     private static volatile Consumer<DevConsoleRequest> handler;
     private static volatile Map<String, Map<String, Object>> templateInfo;
+    private static volatile HotReplacementContext hotReplacementContext;
 
     public static void registerHandler(Consumer<DevConsoleRequest> requestHandler) {
         handler = requestHandler;
@@ -28,5 +31,13 @@ public class DevConsoleManager {
 
     public static void setTemplateInfo(Map<String, Map<String, Object>> templateInfo) {
         DevConsoleManager.templateInfo = templateInfo;
+    }
+
+    public static HotReplacementContext getHotReplacementContext() {
+        return hotReplacementContext;
+    }
+
+    public static void setHotReplacementContext(HotReplacementContext hotReplacementContext) {
+        DevConsoleManager.hotReplacementContext = hotReplacementContext;
     }
 }
