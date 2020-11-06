@@ -15,6 +15,17 @@
   <title>{#insert title/}</title>
  </head>
  <body>
+  <nav aria-label="breadcrumb">
+   <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="/@dev/">DEV Console</a></li>
+    {#if currentExtensionName == 'Eclipse Vert.x - HTTP'}
+     <li class="breadcrumb-item active" aria-current="page">{#insert title/}</li>
+    {#else if currentExtensionName}
+     <li class="breadcrumb-item">{currentExtensionName}</li>
+     <li class="breadcrumb-item active" aria-current="page">{#insert title/}</li>
+    {/if}
+   </ol>
+  </nav>
   <div class="container">
    <h1>{#insert title/}</h1>
    {#insert body/}

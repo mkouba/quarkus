@@ -30,9 +30,26 @@ public class DevConsole implements Handler<RoutingContext> {
     static final ThreadLocal<String> currentExtension = new ThreadLocal<>();
 
     final Engine engine;
+    final Map<String, Map<String, Object>> extensions = new HashMap<>();
 
     DevConsole(Engine engine) {
         this.engine = engine;
+        try {
+            Enumeration<URL> extensionDescriptors = getClass().getClassLoader()
+                    .getResources("/META-INF/quarkus-extension.yaml");
+            Yaml yaml = new Yaml();
+            while (extensionDescriptors.hasMoreElements()) {
+                URL extensionDescriptor = extensionDescriptors.nextElement();
+                String desc = readURL(extensionDescriptor);
+                Map<String, Object> loaded = yaml.load(desc);
+                String artifactId = (String) loaded.get("artifact-id");
+                String groupId = (String) loaded.get("group-id");
+                String namespace = groupId + "." + artifactId;
+                extensions.put(namespace, loaded);
+            }
+        } catch (IOException x) {
+            throw new RuntimeException(x);
+        }
     }
 
     @Override
@@ -50,12 +67,20 @@ public class DevConsole implements Handler<RoutingContext> {
             currentExtension.set(namespace);
             Template devTemplate = engine.getTemplate(path);
             if (devTemplate != null) {
+                String extName = getExtensionName(namespace);
                 event.response().setStatusCode(200).headers().set(HttpHeaderNames.CONTENT_TYPE, "text/html; charset=UTF-8");
-                renderTemplate(event, devTemplate.instance());
+                renderTemplate(event, devTemplate.data("currentExtensionName", extName));
             } else {
                 event.next();
             }
         }
+    }
+
+    private String getExtensionName(String namespace) {
+        Map<String, Object> map = extensions.get(namespace);
+        if (map == null)
+            return null;
+        return (String) map.get("name");
     }
 
     protected void renderTemplate(RoutingContext event, TemplateInstance template) {
@@ -73,41 +98,30 @@ public class DevConsole implements Handler<RoutingContext> {
     }
 
     public void sendMainPage(RoutingContext event) {
-        try {
-            Template devTemplate = engine.getTemplate("index");
-            Enumeration<URL> extensionDescriptors = getClass().getClassLoader()
-                    .getResources("/META-INF/quarkus-extension.yaml");
-            List<Map<String, Object>> extensions = new ArrayList<>();
-            Yaml yaml = new Yaml();
-            while (extensionDescriptors.hasMoreElements()) {
-                URL extensionDescriptor = extensionDescriptors.nextElement();
-                String desc = readURL(extensionDescriptor);
-                Map<String, Object> loaded = yaml.load(desc);
-                @SuppressWarnings("unchecked")
-                Map<String, Object> metadata = (Map<String, Object>) loaded.get("metadata");
-                Boolean unlisted = (Boolean) metadata.get("unlisted");
-                String artifactId = (String) loaded.get("artifact-id");
-                String groupId = (String) loaded.get("group-id");
-                currentExtension.set(groupId + "." + artifactId); // needed because the template of the extension is going to be read
-                Template simpleTemplate = engine.getTemplate(groupId + "." + artifactId + "/embedded.html");
-                boolean display = (unlisted == null || !unlisted) || simpleTemplate != null || metadata.containsKey("guide");
-                if (display) {
-                    if (simpleTemplate != null) {
-                        Map<String, Object> data = new HashMap<>();
-                        data.put("urlbase", groupId + "." + artifactId + "/");
-                        String result = simpleTemplate.render(data);
-                        loaded.put("_dev", result);
-                    }
-                    extensions.add(loaded);
+        Template devTemplate = engine.getTemplate("index");
+        List<Map<String, Object>> extensions = new ArrayList<>();
+        for (Map<String, Object> loaded : this.extensions.values()) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> metadata = (Map<String, Object>) loaded.get("metadata");
+            Boolean unlisted = (Boolean) metadata.get("unlisted");
+            String artifactId = (String) loaded.get("artifact-id");
+            String groupId = (String) loaded.get("group-id");
+            currentExtension.set(groupId + "." + artifactId); // needed because the template of the extension is going to be read
+            Template simpleTemplate = engine.getTemplate(groupId + "." + artifactId + "/embedded.html");
+            boolean display = (unlisted == null || !unlisted) || simpleTemplate != null || metadata.containsKey("guide");
+            if (display) {
+                if (simpleTemplate != null) {
+                    Map<String, Object> data = new HashMap<>();
+                    data.put("urlbase", groupId + "." + artifactId + "/");
+                    String result = simpleTemplate.render(data);
+                    loaded.put("_dev", result);
                 }
+                extensions.add(loaded);
             }
-            extensions.sort(Comparator.comparing(m -> ((String) m.get("name"))));
-            TemplateInstance instance = devTemplate.data("extensions", extensions);
-            renderTemplate(event, instance);
-        } catch (IOException e) {
-            event.fail(e);
-
         }
+        extensions.sort(Comparator.comparing(m -> ((String) m.get("name"))));
+        TemplateInstance instance = devTemplate.data("extensions", extensions);
+        renderTemplate(event, instance);
     }
 
     private static String readURL(URL url) throws IOException {
