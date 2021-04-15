@@ -1,6 +1,22 @@
 {#include main}
   {#title}Schedules{/title}
   {#body}
+  {#if info:scheduler.running}
+  <form method="post" enctype="application/x-www-form-urlencoded">
+    Status: 
+    <strong>RUNNING</strong> 
+    <input type="hidden" name="action" value="pause">
+    <input id="pause" type="submit" value="Pause" class="btn btn-primary btn-sm">
+  </form>
+  {#else}
+  <form method="post" enctype="application/x-www-form-urlencoded">
+     Status: 
+    <strong>PAUSED</strong>
+    <input type="hidden" name="action" value="resume">
+    <input id="pause" type="submit" value="Resume" class="btn btn-primary btn-sm">
+  </form>
+  {/if}
+  <hr/>
   <table class="table table-striped">
    <thead class="thead-dark">
     <tr>
