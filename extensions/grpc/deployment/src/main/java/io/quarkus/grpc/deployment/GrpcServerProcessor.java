@@ -201,16 +201,13 @@ public class GrpcServerProcessor {
 
     private Set<MethodInfo> gatherBlockingMethods(ClassInfo service) {
         Set<MethodInfo> result = new HashSet<>();
-        if (service.classAnnotation(GrpcDotNames.BLOCKING) != null) {
-            for (MethodInfo method : service.methods()) {
-                if (!BLOCKING_SKIPPED_METHODS.contains(method.name())
-                        && !method.hasAnnotation(GrpcDotNames.NON_BLOCKING)) {
-                    result.add(method);
-                }
-            }
-        }
+        boolean classHasBlocking = service.classAnnotation(GrpcDotNames.BLOCKING) != null;
         for (MethodInfo method : service.methods()) {
-            if (method.hasAnnotation(GrpcDotNames.BLOCKING)) {
+            if (BLOCKING_SKIPPED_METHODS.contains(method.name())) {
+                continue;
+            }
+            if (method.hasAnnotation(GrpcDotNames.BLOCKING)
+                    || (classHasBlocking && !method.hasAnnotation(GrpcDotNames.NON_BLOCKING))) {
                 result.add(method);
             }
         }
