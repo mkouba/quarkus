@@ -10,7 +10,11 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
@@ -35,6 +39,8 @@ import io.quarkus.arc.InstanceHandle;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.runtime.GrpcClientInterceptorContainer;
 import io.quarkus.grpc.runtime.config.GrpcClientConfiguration;
+import io.quarkus.grpc.runtime.config.GrpcMethodConfig;
+import io.quarkus.grpc.runtime.config.GrpcRetryPolicy;
 import io.quarkus.grpc.runtime.config.GrpcServerConfiguration;
 import io.quarkus.grpc.runtime.config.SslClientConfig;
 import io.quarkus.runtime.LaunchMode;
@@ -112,6 +118,7 @@ public class Channels {
 
         if (config.retry) {
             builder.enableRetry();
+            builder.defaultServiceConfig(createDefaultServiceConfig(config));
         } else {
             builder.disableRetry();
         }
@@ -161,6 +168,29 @@ public class Channels {
         }
 
         return builder.build();
+    }
+
+    private static Map<String, Object> createDefaultServiceConfig(GrpcClientConfiguration clientConfig) {
+        Map<String, Object> serviceConfig = new HashMap<>();
+        List<Map<String, Object>> methodConfigs = new ArrayList<>();
+        for (Entry<String, GrpcMethodConfig> entry : clientConfig.methods.entrySet()) {
+            Map<String, Object> methodConfig = new HashMap<>();
+            methodConfig.put("name", Map.of("service", null, "method", entry.getKey()));
+            if (entry.getValue().retryPolicy.isPresent()) {
+                GrpcRetryPolicy retryPolicy = entry.getValue().retryPolicy.get();
+                Map<String, Object> retryPolicyConfig = new HashMap<>();
+                // Use Double for numbers
+                // See the javadoc of io.grpc.ManagedChannelBuilder.defaultServiceConfig()
+                retryPolicyConfig.put("maxAttempts", Double.valueOf("" + retryPolicy.maxAttempts));
+                retryPolicyConfig.put("initialBackoff", retryPolicy.initialBackoff);
+                retryPolicyConfig.put("maxBackoff", retryPolicy.maxBackoff);
+                retryPolicyConfig.put("backoffMultiplier", Double.valueOf("" + retryPolicy.backoffMultiplier));
+                retryPolicyConfig.put("retryableStatusCodes", retryPolicy.retryableStatusCodes);
+                methodConfig.put("retryConfig", retryPolicyConfig);
+            }
+        }
+        serviceConfig.put("methodConfig", methodConfigs);
+        return serviceConfig;
     }
 
     private static GrpcClientConfiguration testConfig(GrpcServerConfiguration serverConfiguration) {
