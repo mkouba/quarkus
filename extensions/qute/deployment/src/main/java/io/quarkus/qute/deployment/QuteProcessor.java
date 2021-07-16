@@ -1072,7 +1072,9 @@ public class QuteProcessor {
         String basePath = "templates";
         Path templatesPath = applicationArchive.getChildPath(basePath);
 
-        if (templatesPath != null) {
+        if (templatesPath != null
+                // We need to check the path again because ApplicationArchive#getChildPath() is case-insensitive on Windows
+                && templatesPath.toString().endsWith(basePath)) {
             scan(templatesPath, templatesPath, basePath + "/", watchedPaths, templatePaths, nativeImageResources);
         }
     }
