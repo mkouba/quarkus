@@ -12,36 +12,40 @@ import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.http.runtime.devmode.Json;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
+import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.RoutingContext;
 
 @Recorder
 public class CacheDevConsoleRecorder {
     public Handler<RoutingContext> clearCacheHandler() {
         return new DevConsolePostHandler() {
-            int code;
-            String message = "";
 
             @Override
-            protected void handlePost(RoutingContext event, MultiMap form) {
+            protected void handlePost(RoutingContext context, MultiMap form) {
                 String cacheName = form.get("name");
                 Optional<Cache> cache = CaffeineCacheSupplier.cacheManager().getCache(cacheName);
+                HttpServerResponse response = context.response();
                 if (cache.isPresent() && cache.get() instanceof CaffeineCache) {
                     CaffeineCacheImpl caffeineCache = (CaffeineCacheImpl) cache.get();
 
+                    
                     String action = form.get("action");
                     if (action.equalsIgnoreCase("clearCache")) {
                         caffeineCache.invalidateAll().subscribe().with(ignored -> {
-                            event.response().setStatusCode(this.code);
-                            event.response().end(this.message);
+                            response.setStatusCode(HttpResponseStatus.OK.code());
+                            response.end(createResponseMessage(caffeineCache));
                         });
+                    } else if (action.equalsIgnoreCase("refresh")) {
+                        response.setStatusCode(HttpResponseStatus.OK.code());
+                        response.end(createResponseMessage(caffeineCache));
+                    } else {
+                        response.setStatusCode(HttpResponseStatus.INTERNAL_SERVER_ERROR.code());
+                        response.end(createResponseError(cacheName, "Invalid action: " + action));
                     }
-                    this.code = HttpResponseStatus.OK.code();
-                    this.message = createResponseMessage(caffeineCache);
-                    return;
                 } else {
                     String errorMessage = "Cache for " + cacheName + " not found";
-                    this.code = HttpResponseStatus.NOT_FOUND.code();
-                    this.message = createResponseError(cacheName, errorMessage);
+                    response.setStatusCode(HttpResponseStatus.NOT_FOUND.code());
+                    response.end(createResponseError(cacheName, errorMessage));
                 }
             }
 
