@@ -22,7 +22,7 @@ public class CacheDevConsoleRecorder {
             String message = "";
 
             @Override
-            protected void handlePost(RoutingContext event, MultiMap form) throws Exception {
+            protected void handlePostAsync(RoutingContext event, MultiMap form) {
                 String cacheName = form.get("name");
                 Optional<Cache> cache = CaffeineCacheSupplier.cacheManager().getCache(cacheName);
                 if (cache.isPresent() && cache.get() instanceof CaffeineCache) {
@@ -30,7 +30,7 @@ public class CacheDevConsoleRecorder {
 
                     String action = form.get("action");
                     if (action.equalsIgnoreCase("clearCache")) {
-                        caffeineCache.invalidateAll();
+                        caffeineCache.invalidateAll().await().indefinitely();
                     }
                     this.code = HttpResponseStatus.OK.code();
                     this.message = createResponseMessage(caffeineCache);
