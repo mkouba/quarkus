@@ -15,8 +15,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import javax.enterprise.inject.spi.DeploymentException;
 
@@ -109,13 +111,13 @@ public class GrpcServerProcessor {
             BuildProducer<DelegatingGrpcBeanBuildItem> delegatingBeans) {
 
         // generated bean class -> blocking methods
-        Map<DotName, Set<MethodInfo>> generatedBeans = new HashMap<>();
+        Map<DotName, Set<String>> generatedBeans = new HashMap<>();
         String[] excludedPackages = { "grpc.health.v1", "io.grpc.reflection" };
 
         // We need to transform the generated bean and register a bindable service if:
         // 1. there is a user-defined bean that implements the generated interface (injected delegate)
         // 2. there is no user-defined bean that extends the relevant impl bases (both mutiny and regular)
-        for (ClassInfo generatedBean : index.getIndex().getKnownDirectImplementors(GrpcDotNames.MUTINY_BEAN)) {
+        for (ClassInfo generatedBean : index.getIndex().getAllKnownImplementors(GrpcDotNames.MUTINY_BEAN)) {
             FieldInfo delegateField = generatedBean.field("delegate");
             if (delegateField == null) {
                 throw new IllegalStateException("A generated bean does not declare the delegate field: " + generatedBean);
@@ -161,7 +163,7 @@ public class GrpcServerProcessor {
             if (!excluded) {
                 log.debugf("Registering generated gRPC bean %s that will delegate to %s", generatedBean, userDefinedBean);
                 delegatingBeans.produce(new DelegatingGrpcBeanBuildItem(generatedBean, userDefinedBean));
-                Set<MethodInfo> blockingMethods = gatherBlockingMethods(userDefinedBean);
+                Set<String> blockingMethods = gatherBlockingMethods(userDefinedBean, index.getIndex());
 
                 generatedBeans.put(generatedBean.name(), blockingMethods);
             }
@@ -171,10 +173,10 @@ public class GrpcServerProcessor {
             // For every suitable bean we must:
             // (a) add @Singleton and @GrpcService
             // (b) register a BindableServiceBuildItem, incl. all blocking methods (derived from the user-defined impl)
-            for (Entry<DotName, Set<MethodInfo>> entry : generatedBeans.entrySet()) {
+            for (Entry<DotName, Set<String>> entry : generatedBeans.entrySet()) {
                 BindableServiceBuildItem bindableService = new BindableServiceBuildItem(entry.getKey());
-                for (MethodInfo blockingMethod : entry.getValue()) {
-                    bindableService.registerBlockingMethod(blockingMethod.name());
+                for (String blockingMethod : entry.getValue()) {
+                    bindableService.registerBlockingMethod(blockingMethod);
                 }
                 bindables.produce(bindableService);
             }
@@ -200,8 +202,8 @@ public class GrpcServerProcessor {
     @BuildStep
     void discoverBindableServices(BuildProducer<BindableServiceBuildItem> bindables,
             CombinedIndexBuildItem combinedIndexBuildItem) {
-        Collection<ClassInfo> bindableServices = combinedIndexBuildItem.getIndex()
-                .getAllKnownImplementors(GrpcDotNames.BINDABLE_SERVICE);
+        IndexView index = combinedIndexBuildItem.getIndex();
+        Collection<ClassInfo> bindableServices = index.getAllKnownImplementors(GrpcDotNames.BINDABLE_SERVICE);
 
         for (ClassInfo service : bindableServices) {
             if (service.interfaceNames().contains(GrpcDotNames.MUTINY_BEAN)) {
@@ -212,42 +214,117 @@ public class GrpcServerProcessor {
                 continue;
             }
             BindableServiceBuildItem item = new BindableServiceBuildItem(service.name());
-            Set<MethodInfo> blockingMethods = gatherBlockingMethods(service);
-            for (MethodInfo method : blockingMethods) {
-                item.registerBlockingMethod(method.name());
+            Set<String> blockingMethods = gatherBlockingMethods(service, index);
+            for (String method : blockingMethods) {
+                item.registerBlockingMethod(method);
             }
             bindables.produce(item);
         }
     }
 
-    private Set<MethodInfo> gatherBlockingMethods(ClassInfo service) {
-        Set<MethodInfo> result = new HashSet<>();
-        boolean blockingClass = service.classAnnotation(GrpcDotNames.BLOCKING) != null;
-        if (blockingClass && service.classAnnotation(GrpcDotNames.NON_BLOCKING) != null) {
+    /**
+     * Generate list of {@link ClassInfo} with {@code service} as the first element and the class implementing
+     * {@code io.grpc.BindableService} (the protobuf generated {@code *ImplBase}) as the last one.
+     */
+    private static List<ClassInfo> classHierarchy(ClassInfo service, IndexView index) {
+        List<ClassInfo> collected = new ArrayList<>();
+        for (ClassInfo ci = service; ci != null;) {
+            collected.add(ci);
+
+            // Stop at the class that implements io.grpc.BindableService or
+            if (ci.interfaceNames().contains(GrpcDotNames.BINDABLE_SERVICE)) {
+                break;
+            }
+
+            DotName superName = ci.superName();
+            if (superName == null) {
+                break;
+            }
+            ci = index.getClassByName(superName);
+        }
+        return collected;
+    }
+
+    private static Set<DotName> relevantAnnotations(List<ClassInfo> classHierarchy) {
+        Set<DotName> relevant = new HashSet<>();
+        relevant.add(GrpcDotNames.BLOCKING);
+        relevant.add(GrpcDotNames.NON_BLOCKING);
+        relevant.add(TRANSACTIONAL);
+
+        return classHierarchy.stream()
+                .flatMap(ci -> ci.classAnnotations().stream())
+                .map(AnnotationInstance::name)
+                .filter(relevant::contains)
+                .collect(Collectors.toSet());
+    }
+
+    private static Set<DotName> relevantAnnotations(List<ClassInfo> classHierarchy, MethodInfo method) {
+        Set<DotName> relevant = new HashSet<>();
+        relevant.add(GrpcDotNames.BLOCKING);
+        relevant.add(GrpcDotNames.NON_BLOCKING);
+        relevant.add(TRANSACTIONAL);
+
+        return classHierarchy.stream()
+                .map(ci -> ci.method(method.name(), method.parameters().toArray(new Type[0])))
+                .filter(Objects::nonNull)
+                .flatMap(mi -> mi.annotations().stream())
+                .map(AnnotationInstance::name)
+                .filter(relevant::contains)
+                .collect(Collectors.toSet());
+    }
+
+    private Set<String> gatherBlockingMethods(ClassInfo service, IndexView index) {
+        List<ClassInfo> classes = classHierarchy(service, index);
+        Set<DotName> annotation = relevantAnnotations(classes);
+
+        boolean blockingClass = annotation.contains(GrpcDotNames.BLOCKING);
+        if (blockingClass && annotation.contains(GrpcDotNames.NON_BLOCKING)) {
             throw new DeploymentException("Class '" + service.name()
                     + "' contains both @Blocking and @NonBlocking annotations.");
         }
         // if we have @Transactional, and no @NonBlocking,
-        blockingClass |= service.classAnnotation(TRANSACTIONAL) != null &&
-                service.classAnnotation(NON_BLOCKING) == null;
+        blockingClass |= annotation.contains(TRANSACTIONAL) && !annotation.contains(NON_BLOCKING);
 
-        for (MethodInfo method : service.methods()) {
-            if (BLOCKING_SKIPPED_METHODS.contains(method.name())) {
-                continue;
-            }
+        Set<String> result = new HashSet<>();
+        Set<String> checked = new HashSet<>();
 
-            if (method.hasAnnotation(BLOCKING)) {
-                if (method.hasAnnotation(NON_BLOCKING)) {
-                    throw new DeploymentException("Method '" + method.declaringClass().name() + "#" + method.name() +
-                            "' contains both @Blocking and @NonBlocking annotations.");
-                } else {
-                    result.add(method);
+        // Collect all gRPC methods from the *ImplBase class
+        Map<String, Type[]> grpcMethods = classes.get(classes.size() - 1).methods().stream()
+                .filter(m -> !skipMethod(m))
+                .collect(Collectors.toMap(MethodInfo::name, m -> m.parameters().toArray(new Type[0])));
+
+        for (Entry<String, Type[]> grpcMethod : grpcMethods.entrySet()) {
+            // Traverse the whole class hierarchy to check all methods, even those only declared on base/super classes.
+            // (Start with the discovered service class.)
+            for (ClassInfo clazz : classes) {
+                MethodInfo method = clazz.method(grpcMethod.getKey(), grpcMethod.getValue());
+                if (method == null) {
+                    continue;
                 }
-            } else if ((method.hasAnnotation(TRANSACTIONAL) || blockingClass) && !method.hasAnnotation(NON_BLOCKING)) {
-                result.add(method);
+                if (!checked.add(method.name())) {
+                    continue;
+                }
+
+                // Find the annotations for the current method,
+                Set<DotName> methodAnnotations = relevantAnnotations(classes, method);
+                if (methodAnnotations.contains(BLOCKING)) {
+                    if (methodAnnotations.contains(NON_BLOCKING)) {
+                        throw new DeploymentException("Method '" + method.declaringClass().name() + "#" + method.name() +
+                                "' contains both @Blocking and @NonBlocking annotations.");
+                    } else {
+                        result.add(method.name());
+                    }
+                } else if ((methodAnnotations.contains(TRANSACTIONAL) || blockingClass)
+                        && !methodAnnotations.contains(NON_BLOCKING)) {
+                    result.add(method.name());
+                }
             }
         }
         return result;
+    }
+
+    private boolean skipMethod(MethodInfo method) {
+        return BLOCKING_SKIPPED_METHODS.contains(method.name());
     }
 
     @BuildStep
