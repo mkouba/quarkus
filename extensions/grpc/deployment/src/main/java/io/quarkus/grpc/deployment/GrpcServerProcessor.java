@@ -19,6 +19,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.enterprise.inject.spi.DeploymentException;
 
@@ -99,6 +100,17 @@ public class GrpcServerProcessor {
     private static final String KEY = SSL_PREFIX + "key";
     private static final String KEY_STORE = SSL_PREFIX + "key-store";
     private static final String TRUST_STORE = SSL_PREFIX + "trust-store";
+
+    /**
+     * Annotation names used in {@link #relevantAnnotations(Stream)}.
+     */
+    private static final Set<DotName> RELEVANT_ANNOTATIONS;
+    static {
+        RELEVANT_ANNOTATIONS = new HashSet<>();
+        RELEVANT_ANNOTATIONS.add(GrpcDotNames.BLOCKING);
+        RELEVANT_ANNOTATIONS.add(GrpcDotNames.NON_BLOCKING);
+        RELEVANT_ANNOTATIONS.add(TRANSACTIONAL);
+    }
 
     @BuildStep
     MinNettyAllocatorMaxOrderBuildItem setMinimalNettyMaxOrderSize() {
@@ -246,51 +258,42 @@ public class GrpcServerProcessor {
     }
 
     private static Set<DotName> relevantAnnotations(List<ClassInfo> classHierarchy) {
-        Set<DotName> relevant = new HashSet<>();
-        relevant.add(GrpcDotNames.BLOCKING);
-        relevant.add(GrpcDotNames.NON_BLOCKING);
-        relevant.add(TRANSACTIONAL);
-
-        return classHierarchy.stream()
-                .flatMap(ci -> ci.classAnnotations().stream())
-                .map(AnnotationInstance::name)
-                .filter(relevant::contains)
-                .collect(Collectors.toSet());
+        return relevantAnnotations(classHierarchy.stream()
+                .flatMap(ci -> ci.classAnnotations().stream()));
     }
 
     private static Set<DotName> relevantAnnotations(List<ClassInfo> classHierarchy, MethodInfo method) {
-        Set<DotName> relevant = new HashSet<>();
-        relevant.add(GrpcDotNames.BLOCKING);
-        relevant.add(GrpcDotNames.NON_BLOCKING);
-        relevant.add(TRANSACTIONAL);
-
-        return classHierarchy.stream()
+        return relevantAnnotations(classHierarchy.stream()
                 .map(ci -> ci.method(method.name(), method.parameters().toArray(new Type[0])))
                 .filter(Objects::nonNull)
-                .flatMap(mi -> mi.annotations().stream())
+                .flatMap(mi -> mi.annotations().stream()));
+    }
+
+    private static Set<DotName> relevantAnnotations(Stream<AnnotationInstance> annotations) {
+        return annotations
                 .map(AnnotationInstance::name)
-                .filter(relevant::contains)
+                .filter(RELEVANT_ANNOTATIONS::contains)
                 .collect(Collectors.toSet());
     }
 
     private Set<String> gatherBlockingMethods(ClassInfo service, IndexView index) {
         List<ClassInfo> classes = classHierarchy(service, index);
-        Set<DotName> annotation = relevantAnnotations(classes);
+        Set<DotName> annotations = relevantAnnotations(classes);
 
-        boolean blockingClass = annotation.contains(GrpcDotNames.BLOCKING);
-        if (blockingClass && annotation.contains(GrpcDotNames.NON_BLOCKING)) {
+        boolean blockingClass = annotations.contains(GrpcDotNames.BLOCKING);
+        if (blockingClass && annotations.contains(GrpcDotNames.NON_BLOCKING)) {
             throw new DeploymentException("Class '" + service.name()
                     + "' contains both @Blocking and @NonBlocking annotations.");
         }
         // if we have @Transactional, and no @NonBlocking,
-        blockingClass |= annotation.contains(TRANSACTIONAL) && !annotation.contains(NON_BLOCKING);
+        blockingClass |= annotations.contains(TRANSACTIONAL) && !annotations.contains(NON_BLOCKING);
 
         Set<String> result = new HashSet<>();
         Set<String> checked = new HashSet<>();
 
         // Collect all gRPC methods from the *ImplBase class
         Map<String, Type[]> grpcMethods = classes.get(classes.size() - 1).methods().stream()
-                .filter(m -> !skipMethod(m))
+                .filter(m -> !BLOCKING_SKIPPED_METHODS.contains(m.name()))
                 .collect(Collectors.toMap(MethodInfo::name, m -> m.parameters().toArray(new Type[0])));
 
         for (Entry<String, Type[]> grpcMethod : grpcMethods.entrySet()) {
@@ -321,10 +324,6 @@ public class GrpcServerProcessor {
             }
         }
         return result;
-    }
-
-    private boolean skipMethod(MethodInfo method) {
-        return BLOCKING_SKIPPED_METHODS.contains(method.name());
     }
 
     @BuildStep
