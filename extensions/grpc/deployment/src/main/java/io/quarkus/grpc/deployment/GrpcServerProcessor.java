@@ -116,7 +116,7 @@ public class GrpcServerProcessor {
         // We need to transform the generated bean and register a bindable service if:
         // 1. there is a user-defined bean that implements the generated interface (injected delegate)
         // 2. there is no user-defined bean that extends the relevant impl bases (both mutiny and regular)
-        for (ClassInfo generatedBean : index.getIndex().getAllKnownImplementors(GrpcDotNames.MUTINY_BEAN)) {
+        for (ClassInfo generatedBean : index.getIndex().getKnownDirectImplementors(GrpcDotNames.MUTINY_BEAN)) {
             FieldInfo delegateField = generatedBean.field("delegate");
             if (delegateField == null) {
                 throw new IllegalStateException("A generated bean does not declare the delegate field: " + generatedBean);
