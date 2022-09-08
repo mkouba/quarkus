@@ -26,10 +26,8 @@ import org.jboss.logging.Logger;
 
 /**
  * The built-in context for {@link RequestScoped}.
- *
- * @author Martin Kouba
  */
-class RequestContext implements ManagedContext {
+public class RequestContext implements ManagedContext {
 
     private static final Logger LOG = Logger.getLogger("io.quarkus.arc.requestContext");
 
@@ -158,6 +156,11 @@ class RequestContext implements ManagedContext {
         return currentContext.get();
     }
 
+    // TODO this is not good, ideally we don't expose the current context like this...
+    public CurrentContext<RequestContextState> getCurrentContext() {
+        return currentContext;
+    }
+
     @Override
     public void deactivate() {
         if (LOG.isTraceEnabled()) {
@@ -254,7 +257,7 @@ class RequestContext implements ManagedContext {
                 ArcContainerImpl.instance(), false);
     }
 
-    static class RequestContextState implements ContextState {
+    public static class RequestContextState implements ContextState {
 
         private final Map<Contextual<?>, ContextInstanceHandle<?>> map;
 

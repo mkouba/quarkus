@@ -26,6 +26,11 @@
       <groupId>org.eclipse.microprofile.context-propagation</groupId>
       <artifactId>microprofile-context-propagation-api</artifactId>
     </dependency>
+    <!-- This dependency is needed if we want the ArcContextProvider to implement the FastThreadContextProvider -->
+    <dependency>
+       <groupId>io.smallrye</groupId>
+       <artifactId>smallrye-context-propagation</artifactId>
+    </dependency>
   </dependencies>
 
   <build>

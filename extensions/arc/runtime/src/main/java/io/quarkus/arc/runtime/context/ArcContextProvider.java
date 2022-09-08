@@ -1,24 +1,29 @@
 package io.quarkus.arc.runtime.context;
 
 import java.util.Map;
+import java.util.function.Supplier;
 
 import org.eclipse.microprofile.context.ThreadContext;
 import org.eclipse.microprofile.context.spi.ThreadContextController;
-import org.eclipse.microprofile.context.spi.ThreadContextProvider;
 import org.eclipse.microprofile.context.spi.ThreadContextSnapshot;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.CurrentContext;
 import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.InjectableContext.ContextState;
 import io.quarkus.arc.ManagedContext;
+import io.quarkus.arc.impl.LazyValue;
+import io.quarkus.arc.impl.RequestContext;
+import io.quarkus.arc.impl.RequestContext.RequestContextState;
+import io.smallrye.context.FastThreadContextProvider;
 
 /**
  * Context propagation for ArC.
  * <p>
  * Only handles the request context as that's currently the only one in ArC that needs propagation.
  */
-public class ArcContextProvider implements ThreadContextProvider {
+public class ArcContextProvider implements FastThreadContextProvider {
 
     protected static final ThreadContextController NOOP_CONTROLLER = new ThreadContextController() {
         @Override
@@ -28,6 +33,34 @@ public class ArcContextProvider implements ThreadContextProvider {
 
     private static final ThreadContextSnapshot NULL_CONTEXT_SNAPSHOT = new NullContextSnapshot();
     private static final ThreadContextSnapshot CLEAR_CONTEXT_SNAPSHOT = new ClearContextSnapshot();
+
+    private final LazyValue<ThreadLocal<RequestContextState>> currentContext = new LazyValue<>(new Supplier<>() {
+
+        @Override
+        public ThreadLocal<RequestContextState> get() {
+            RequestContext requestContext = (RequestContext) Arc.container().requestContext();
+            CurrentContext<RequestContextState> currentContext = requestContext.getCurrentContext();
+            return new ThreadLocal<RequestContextState>() {
+
+                @Override
+                public RequestContextState get() {
+                    // TODO we can't do the state.isValid() check here and activate a new request context if needed
+                    return currentContext.get();
+                }
+
+                @Override
+                public void set(RequestContextState value) {
+                    currentContext.set(value);
+                }
+
+                @Override
+                public void remove() {
+                    currentContext.remove();
+                }
+
+            };
+        }
+    });
 
     @Override
     public ThreadContextSnapshot currentContext(Map<String, String> map) {
@@ -55,6 +88,17 @@ public class ArcContextProvider implements ThreadContextProvider {
             return null;
         }
         return CLEAR_CONTEXT_SNAPSHOT;
+    }
+
+    @Override
+    public ThreadLocal<?> threadLocal(Map<String, String> props) {
+        return currentContext.get();
+    }
+
+    @Override
+    public Object clearedValue(Map<String, String> props) {
+        // TODO Auto-generated method stub
+        return FastThreadContextProvider.super.clearedValue(props);
     }
 
     @Override
