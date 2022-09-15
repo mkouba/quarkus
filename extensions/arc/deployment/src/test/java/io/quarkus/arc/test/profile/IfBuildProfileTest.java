@@ -27,6 +27,7 @@ import io.quarkus.arc.config.ConfigPrefix;
 import io.quarkus.arc.config.ConfigProperties;
 import io.quarkus.arc.profile.IfBuildProfile;
 import io.quarkus.test.QuarkusUnitTest;
+import io.smallrye.config.ConfigMapping;
 
 public class IfBuildProfileTest {
 
@@ -105,9 +106,9 @@ public class IfBuildProfileTest {
     }
 
     @IfBuildProfile("prod")
-    @ConfigProperties(prefix = "dummy.prod")
-    public static class DummyProd {
-        public String message;
+    @ConfigMapping(prefix = "dummy.prod")
+    public interface DummyProd {
+        String message();
     }
 
     @Singleton

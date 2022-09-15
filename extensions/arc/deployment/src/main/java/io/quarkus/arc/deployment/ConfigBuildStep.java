@@ -277,13 +277,14 @@ public class ConfigBuildStep {
     @BuildStep
     void generateConfigClasses(
             CombinedIndexBuildItem combinedIndex,
+            BuildExclusionsBuildItem buildExclusions,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<ConfigClassBuildItem> configClasses) {
 
         // TODO - Generation of Mapping interface classes can be done in core because they don't require CDI
         ConfigMappingUtils.generateConfigClasses(combinedIndex, generatedClasses, reflectiveClasses, configClasses,
-                CONFIG_MAPPING_NAME);
+                CONFIG_MAPPING_NAME, configClass -> !buildExclusions.isExcluded(configClass));
         ConfigMappingUtils.generateConfigClasses(combinedIndex, generatedClasses, reflectiveClasses, configClasses,
                 MP_CONFIG_PROPERTIES_NAME);
     }
@@ -291,6 +292,7 @@ public class ConfigBuildStep {
     @BuildStep
     void registerConfigMappingsBean(
             BeanRegistrationPhaseBuildItem beanRegistration,
+            BuildExclusionsBuildItem exclusionsBuildItem,
             List<ConfigClassBuildItem> configClasses,
             CombinedIndexBuildItem combinedIndex,
             BuildProducer<BeanConfiguratorBuildItem> beanConfigurator) {
@@ -310,6 +312,11 @@ public class ConfigBuildStep {
         }
 
         for (ConfigClassBuildItem configClass : configMappings) {
+            ClassInfo target = combinedIndex.getIndex().getClassByName(configClass.getName());
+            if (target != null && exclusionsBuildItem.isExcluded(target)) {
+                LOGGER.debugf("Config mapping %s is excluced", target);
+                continue;
+            }
             BeanConfigurator<Object> bean = beanRegistration.getContext()
                     .configure(configClass.getConfigClass())
                     .types(configClass.getTypes().toArray(new Type[] {}))

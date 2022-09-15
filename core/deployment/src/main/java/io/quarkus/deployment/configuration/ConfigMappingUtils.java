@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -40,7 +41,8 @@ public class ConfigMappingUtils {
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<ConfigClassBuildItem> configClasses,
-            DotName configAnnotation) {
+            DotName configAnnotation,
+            Predicate<ClassInfo> configClassPredicate) {
 
         for (AnnotationInstance instance : combinedIndex.getIndex().getAnnotations(configAnnotation)) {
             AnnotationTarget target = instance.target();
@@ -50,12 +52,26 @@ public class ConfigMappingUtils {
                 continue;
             }
 
-            Class<?> configClass = toClass(target.asClass().name());
+            ClassInfo configClassInfo = target.asClass();
+            if (!configClassPredicate.test(configClassInfo)) {
+                continue;
+            }
+            Class<?> configClass = toClass(configClassInfo.name());
             String prefix = Optional.ofNullable(annotationPrefix).map(AnnotationValue::asString).orElse("");
             Kind configClassKind = getConfigClassType(instance);
             processConfigClass(configClass, configClassKind, prefix, true, combinedIndex, generatedClasses, reflectiveClasses,
                     configClasses);
         }
+    }
+
+    public static void generateConfigClasses(
+            CombinedIndexBuildItem combinedIndex,
+            BuildProducer<GeneratedClassBuildItem> generatedClasses,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            BuildProducer<ConfigClassBuildItem> configClasses,
+            DotName configAnnotation) {
+        generateConfigClasses(combinedIndex, generatedClasses, reflectiveClasses, configClasses, configAnnotation,
+                configClass -> true);
     }
 
     public static void processExtensionConfigMapping(
