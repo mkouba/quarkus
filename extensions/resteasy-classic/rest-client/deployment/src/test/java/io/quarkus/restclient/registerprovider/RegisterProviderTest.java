@@ -21,7 +21,9 @@ public class RegisterProviderTest {
                     .addClasses(EchoResource.class, EchoClient.class, MyFilter.class, MethodsCollector.class,
                             MyRequestBean.class)
                     .addAsResource(new StringAsset("io.quarkus.restclient.registerprovider.EchoClient/mp-rest/url=${test.url}"),
-                            "application.properties"));
+                            "application.properties"))
+            // We need to explicitly enable CP because rest client does not propagate the CDI request context
+            .overrideConfigKey("quarkus.arc.context-propagation.enabled", "true");
 
     @RestClient
     EchoClient client;

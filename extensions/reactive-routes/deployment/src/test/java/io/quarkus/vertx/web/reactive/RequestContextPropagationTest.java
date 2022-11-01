@@ -28,7 +28,10 @@ public class RequestContextPropagationTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(MyRoutes.class, Ping.class));
+                    .addClasses(MyRoutes.class, Ping.class))
+            // We need to explicitly enable CP because Uni.delayIt() does not propagate the CDI request context through the duplicated context
+            // See also VertxCoreRecorder#executionContextHandler()
+            .overrideConfigKey("quarkus.arc.context-propagation.enabled", "true");
 
     @Test
     public void test() throws InterruptedException, ExecutionException, TimeoutException {
