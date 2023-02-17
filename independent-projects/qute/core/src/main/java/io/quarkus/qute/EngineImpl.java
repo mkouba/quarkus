@@ -95,6 +95,11 @@ class EngineImpl implements Engine {
     public Evaluator getEvaluator() {
         return evaluator;
     }
+    
+    @Override
+    public StandaloneEvaluator getStandaloneEvaluator() {
+        return new StandaloneEvaluatorImpl(evaluator);
+    }
 
     public List<ResultMapper> getResultMappers() {
         return resultMappers;

@@ -145,6 +145,13 @@ public interface Engine extends ErrorInitializer {
      * @return the evaluator used to evaluate expressions
      */
     Evaluator getEvaluator();
+    
+    /**
+     * TODO
+     * 
+     * @return
+     */
+    StandaloneEvaluator getStandaloneEvaluator();
 
     /**
      * @return an immutable list of template instance initializers
