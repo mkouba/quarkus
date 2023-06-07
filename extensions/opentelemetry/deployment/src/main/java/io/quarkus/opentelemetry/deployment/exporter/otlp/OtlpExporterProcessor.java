@@ -5,12 +5,13 @@ import static io.quarkus.opentelemetry.runtime.config.build.ExporterType.Constan
 import java.util.function.BooleanSupplier;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.build.exporter.OtlpExporterBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
@@ -47,9 +48,10 @@ public class OtlpExporterProcessor {
             LaunchModeBuildItem launchModeBuildItem,
             OTelRuntimeConfig otelRuntimeConfig,
             OtlpExporterRuntimeConfig exporterRuntimeConfig,
-            BeanContainerBuildItem beanContainerBuildItem) {
+            BuildProducer<ServiceStartBuildItem> service) {
         recorder.installBatchSpanProcessorForOtlp(otelRuntimeConfig,
                 exporterRuntimeConfig,
                 launchModeBuildItem.getLaunchMode());
+        service.produce(new ServiceStartBuildItem("otlp"));
     }
 }

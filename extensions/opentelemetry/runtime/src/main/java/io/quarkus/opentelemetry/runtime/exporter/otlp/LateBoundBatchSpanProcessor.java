@@ -19,7 +19,7 @@ public class LateBoundBatchSpanProcessor implements SpanProcessor {
     private static final Logger log = Logger.getLogger(LateBoundBatchSpanProcessor.class);
 
     private boolean warningLogged = false;
-    private BatchSpanProcessor delegate;
+    private volatile BatchSpanProcessor delegate;
 
     /**
      * Set the actual {@link BatchSpanProcessor} to use as the delegate.
