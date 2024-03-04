@@ -11,6 +11,8 @@ import io.smallrye.common.annotation.Experimental;
 /**
  * A method of an {@link WebSocket} endpoint annotated with this annotation is invoked when the client disconnects from the
  * socket.
+ * <p>
+ * An endpoint may only declare one method annotated with this annotation.
  */
 @Retention(RUNTIME)
 @Target(METHOD)

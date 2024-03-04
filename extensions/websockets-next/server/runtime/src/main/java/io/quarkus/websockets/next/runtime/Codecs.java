@@ -3,9 +3,6 @@ package io.quarkus.websockets.next.runtime;
 import java.lang.reflect.Type;
 import java.util.List;
 
-import jakarta.enterprise.inject.Any;
-import jakarta.enterprise.inject.Instance;
-import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
 import org.jboss.logging.Logger;
@@ -20,10 +17,6 @@ import io.vertx.core.buffer.Buffer;
 public class Codecs {
 
     private static final Logger LOG = Logger.getLogger(Codecs.class);
-
-    @Inject
-    @Any
-    Instance<TextMessageCodec<?>> textCodec;
 
     @All
     List<TextMessageCodec<?>> textCodecs;

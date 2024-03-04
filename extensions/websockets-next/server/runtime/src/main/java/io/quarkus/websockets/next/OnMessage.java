@@ -10,6 +10,8 @@ import io.smallrye.common.annotation.Experimental;
 
 /**
  * A method of an {@link WebSocket} endpoint annotated with this annotation is invoked when an incoming message is received.
+ * <p>
+ * An endpoint may only declare one method annotated with this annotation.
  */
 @Retention(RUNTIME)
 @Target(METHOD)

@@ -7,9 +7,9 @@ import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
 
-@ConfigMapping(prefix = "quarkus.web-socket-next")
+@ConfigMapping(prefix = "quarkus.websockets-next")
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
-public interface WebSocketRuntimeConfig {
+public interface WebSocketsRuntimeConfig {
 
     /**
      * TODO Not implemented yet.

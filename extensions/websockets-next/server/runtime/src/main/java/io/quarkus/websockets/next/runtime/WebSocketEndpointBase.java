@@ -11,8 +11,8 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.virtual.threads.VirtualThreadsRecorder;
 import io.quarkus.websockets.next.WebSocket.ExecutionMode;
-import io.quarkus.websockets.next.WebSocketRuntimeConfig;
 import io.quarkus.websockets.next.WebSocketServerConnection;
+import io.quarkus.websockets.next.WebSocketsRuntimeConfig;
 import io.quarkus.websockets.next.runtime.ConcurrencyLimiter.PromiseComplete;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -34,14 +34,14 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
     private final ConcurrencyLimiter limiter;
 
     @SuppressWarnings("unused")
-    private final WebSocketRuntimeConfig config;
+    private final WebSocketsRuntimeConfig config;
 
     private final ArcContainer container;
 
     private final ContextSupport contextSupport;
 
     public WebSocketEndpointBase(WebSocketServerConnection connection, Codecs codecs,
-            WebSocketRuntimeConfig config, ContextSupport contextSupport) {
+            WebSocketsRuntimeConfig config, ContextSupport contextSupport) {
         this.connection = connection;
         this.codecs = codecs;
         this.limiter = executionMode() == ExecutionMode.SERIAL ? new ConcurrencyLimiter(connection) : null;

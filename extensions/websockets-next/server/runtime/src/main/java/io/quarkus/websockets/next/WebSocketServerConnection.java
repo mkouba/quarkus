@@ -10,7 +10,7 @@ import io.smallrye.common.annotation.Experimental;
 import io.smallrye.mutiny.Uni;
 
 /**
- * This interface represents a client connected to a specific {@link WebSocket} endpoint.
+ * This interface represents a connection from a client to a specific {@link WebSocket} endpoint on the server.
  * <p>
  * Quarkus provides a built-in CDI bean of type {@code WebSocketServerConnection} that can be injected in a {@link WebSocket}
  * endpoint and used to interact with the connected client, or all clients connected to the endpoint respectively
@@ -97,7 +97,7 @@ public interface WebSocketServerConnection extends Sender, BlockingSender {
      *
      * @return the handshake request
      */
-    HandshakeRequest handshake();
+    HandshakeRequest handshakeRequest();
 
     /**
      * Makes it possible to send messages to all clients connected to the same WebSocket endpoint.
@@ -114,7 +114,7 @@ public interface WebSocketServerConnection extends Sender, BlockingSender {
     interface HandshakeRequest {
 
         /**
-         * The name is converted to lower case before use.
+         * The name is case insensitive.
          *
          * @param name
          * @return the first header value for the given header name, or {@code null}
@@ -122,7 +122,7 @@ public interface WebSocketServerConnection extends Sender, BlockingSender {
         String header(String name);
 
         /**
-         * The name is converted to lower case before use.
+         * The name is case insensitive.
          *
          * @param name
          * @return an immutable list of header values for the given header name, never {@code null}
@@ -130,7 +130,7 @@ public interface WebSocketServerConnection extends Sender, BlockingSender {
         List<String> headers(String name);
 
         /**
-         * Names of the headers are converted to lower case.
+         * Returned header names are lower case.
          *
          * @return an immutable map of header names to header values
          */

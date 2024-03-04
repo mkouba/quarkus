@@ -54,9 +54,9 @@ import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.HandlerType;
 import io.quarkus.websockets.next.TextMessageCodec;
 import io.quarkus.websockets.next.WebSocket;
-import io.quarkus.websockets.next.WebSocketRuntimeConfig;
 import io.quarkus.websockets.next.WebSocketServerConnection;
 import io.quarkus.websockets.next.WebSocketServerException;
+import io.quarkus.websockets.next.WebSocketsRuntimeConfig;
 import io.quarkus.websockets.next.deployment.WebSocketEndpointBuildItem.Callback;
 import io.quarkus.websockets.next.runtime.Codecs;
 import io.quarkus.websockets.next.runtime.ConnectionManager;
@@ -345,10 +345,10 @@ public class WebSocketServerProcessor {
                 .build();
 
         MethodCreator constructor = endpointCreator.getConstructorCreator(WebSocketServerConnection.class,
-                Codecs.class, WebSocketRuntimeConfig.class, ContextSupport.class);
+                Codecs.class, WebSocketsRuntimeConfig.class, ContextSupport.class);
         constructor.invokeSpecialMethod(
                 MethodDescriptor.ofConstructor(WebSocketEndpointBase.class, WebSocketServerConnection.class,
-                        Codecs.class, WebSocketRuntimeConfig.class, ContextSupport.class),
+                        Codecs.class, WebSocketsRuntimeConfig.class, ContextSupport.class),
                 constructor.getThis(), constructor.getMethodParam(0), constructor.getMethodParam(1),
                 constructor.getMethodParam(2), constructor.getMethodParam(3));
         constructor.returnNull();

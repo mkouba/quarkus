@@ -12,9 +12,9 @@ import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InjectableContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
-import io.quarkus.websockets.next.WebSocketRuntimeConfig;
 import io.quarkus.websockets.next.WebSocketServerConnection;
 import io.quarkus.websockets.next.WebSocketServerException;
+import io.quarkus.websockets.next.WebSocketsRuntimeConfig;
 import io.quarkus.websockets.next.runtime.WebSocketEndpoint.MessageType;
 import io.quarkus.websockets.next.runtime.WebSocketSessionContext.SessionContextState;
 import io.smallrye.common.vertx.VertxContext;
@@ -35,9 +35,9 @@ public class WebSocketServerRecorder {
 
     static final String WEB_SOCKET_CONN_KEY = WebSocketServerConnection.class.getName();
 
-    private final WebSocketRuntimeConfig config;
+    private final WebSocketsRuntimeConfig config;
 
-    public WebSocketServerRecorder(WebSocketRuntimeConfig config) {
+    public WebSocketServerRecorder(WebSocketsRuntimeConfig config) {
         this.config = config;
     }
 
@@ -53,7 +53,7 @@ public class WebSocketServerRecorder {
                         return connection;
                     }
                 }
-                throw new WebSocketServerException("Unable to obtain the connection from the Vertx duplicated context");
+                throw new WebSocketServerException("Unable to obtain the connection from the Vert.x duplicated context");
             }
         };
     }
@@ -224,7 +224,7 @@ public class WebSocketServerRecorder {
     }
 
     private WebSocketEndpoint createEndpoint(String endpointClassName, Context context, WebSocketServerConnection connection,
-            Codecs codecs, WebSocketRuntimeConfig config, ContextSupport contextSupport) {
+            Codecs codecs, WebSocketsRuntimeConfig config, ContextSupport contextSupport) {
         try {
             ClassLoader cl = Thread.currentThread().getContextClassLoader();
             if (cl == null) {
@@ -235,7 +235,7 @@ public class WebSocketServerRecorder {
                     .loadClass(endpointClassName);
             WebSocketEndpoint endpoint = (WebSocketEndpoint) endpointClazz
                     .getDeclaredConstructor(WebSocketServerConnection.class, Codecs.class,
-                            WebSocketRuntimeConfig.class, ContextSupport.class)
+                            WebSocketsRuntimeConfig.class, ContextSupport.class)
                     .newInstance(connection, codecs, config, contextSupport);
             return endpoint;
         } catch (Exception e) {

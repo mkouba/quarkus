@@ -12,4 +12,4 @@ metadata:
   - "web"
   status: "experimental"
   config:
-  - "quarkus.websocket.next"
+  - "quarkus.websockets.next"

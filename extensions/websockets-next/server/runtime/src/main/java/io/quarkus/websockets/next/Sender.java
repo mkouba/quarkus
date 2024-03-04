@@ -44,6 +44,7 @@ public interface Sender {
      *
      * @param message
      */
+    @CheckReturnValue
     default Uni<Void> sendBinary(byte[] message) {
         return sendBinary(Buffer.buffer(message));
     }
