@@ -32,7 +32,7 @@ public interface ValueResolver extends Resolver, WithPriority {
     // Utility methods
 
     static boolean matchClass(EvalContext ctx, Class<?> clazz) {
-        return ctx.getBase() != null && clazz.isAssignableFrom(ctx.getBase().getClass());
+        return ValueResolvers.matchClass(ctx, clazz);
     }
 
 }

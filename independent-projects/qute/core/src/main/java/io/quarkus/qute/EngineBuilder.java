@@ -37,6 +37,7 @@ public final class EngineBuilder {
     String iterationMetadataPrefix;
     long timeout;
     boolean useAsyncTimeout;
+    ResolverInvoker resolverInvoker;
 
     EngineBuilder() {
         this.sectionHelperFactories = new HashMap<>();
@@ -296,6 +297,17 @@ public final class EngineBuilder {
      */
     public EngineBuilder useAsyncTimeout(boolean value) {
         this.useAsyncTimeout = value;
+        return this;
+    }
+
+    /**
+     * TODO
+     *
+     * @param resolverInvoker
+     * @return self
+     */
+    public EngineBuilder setResolverInvoker(ResolverInvoker resolverInvoker) {
+        this.resolverInvoker = resolverInvoker;
         return this;
     }
 

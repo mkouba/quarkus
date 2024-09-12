@@ -24,9 +24,10 @@ class EvaluatorImpl implements Evaluator {
     private final Map<String, NamespaceResolver[]> namespaceResolvers;
     private final boolean strictRendering;
     private final ErrorInitializer initializer;
+    private final ResolverInvoker resolverInvoker;
 
     EvaluatorImpl(List<ValueResolver> valueResolvers, List<NamespaceResolver> namespaceResolvers, boolean strictRendering,
-            ErrorInitializer errorInitializer) {
+            ErrorInitializer errorInitializer, ResolverInvoker resolverInvoker) {
         this.resolvers = valueResolvers;
         Map<String, NamespaceResolver[]> namespaceResolversMap = new HashMap<>();
         for (NamespaceResolver namespaceResolver : namespaceResolvers) {
@@ -50,6 +51,7 @@ class EvaluatorImpl implements Evaluator {
         this.namespaceResolvers = namespaceResolversMap;
         this.strictRendering = strictRendering;
         this.initializer = errorInitializer;
+        this.resolverInvoker = resolverInvoker;
     }
 
     @Override
@@ -74,7 +76,7 @@ class EvaluatorImpl implements Evaluator {
                     : new NamespaceEvalContextImpl(resolutionContext, part);
             if (matching.length == 1) {
                 // Very often a single matching resolver will be found
-                return matching[0].resolve(context).thenCompose(r -> (parts.size() > 1)
+                return resolverInvoker.resolve(matching[0], context).thenCompose(r -> (parts.size() > 1)
                         ? resolveReference(false, r, parts, resolutionContext, expression, 1)
                         : CompletionStageSupport.toCompletionStage(r));
             } else {
@@ -96,7 +98,7 @@ class EvaluatorImpl implements Evaluator {
             List<Part> parts, NamespaceResolver[] resolvers, int resolverIndex, Expression expression) {
         // Use the next matching namespace resolver
         NamespaceResolver resolver = resolvers[resolverIndex];
-        return resolver.resolve(context).thenCompose(r -> {
+        return resolverInvoker.resolve(resolver, context).thenCompose(r -> {
             if (Results.isNotFound(r)) {
                 // Result not found
                 int nextIdx = resolverIndex + 1;
@@ -143,7 +145,7 @@ class EvaluatorImpl implements Evaluator {
             // Try the cached resolver first
             ValueResolver cachedResolver = evalContext.getCachedResolver();
             if (cachedResolver != null && cachedResolver.appliesTo(evalContext)) {
-                return cachedResolver.resolve(evalContext).thenCompose(r -> {
+                return resolverInvoker.resolve(cachedResolver, evalContext).thenCompose(r -> {
                     if (Results.isNotFound(r)) {
                         return resolve(evalContext, null, false, expression, isLastPart, partIndex);
                     } else {
@@ -208,7 +210,7 @@ class EvaluatorImpl implements Evaluator {
 
         final Iterator<ValueResolver> remainingResolvers = resolvers;
         final ValueResolver foundResolver = applicableResolver;
-        return applicableResolver.resolve(evalContext).thenCompose(r -> {
+        return resolverInvoker.resolve(applicableResolver, evalContext).thenCompose(r -> {
             if (Results.isNotFound(r)) {
                 // Result not found - try the next resolver
                 return resolve(evalContext, remainingResolvers, false, expression, isLastPart, partIndex);

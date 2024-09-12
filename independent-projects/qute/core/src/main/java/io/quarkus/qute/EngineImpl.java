@@ -45,7 +45,8 @@ class EngineImpl implements Engine {
         this.valueResolvers = sort(builder.valueResolvers);
         this.namespaceResolvers = ImmutableList.<NamespaceResolver> builder()
                 .addAll(builder.namespaceResolvers).add(new TemplateImpl.DataNamespaceResolver()).build();
-        this.evaluator = new EvaluatorImpl(this.valueResolvers, this.namespaceResolvers, builder.strictRendering, this);
+        this.evaluator = new EvaluatorImpl(this.valueResolvers, this.namespaceResolvers, builder.strictRendering, this,
+                builder.resolverInvoker != null ? builder.resolverInvoker : new ResolverInvoker());
         this.templates = new ConcurrentHashMap<>();
         this.locators = sort(builder.locators);
         this.resultMappers = sort(builder.resultMappers);
