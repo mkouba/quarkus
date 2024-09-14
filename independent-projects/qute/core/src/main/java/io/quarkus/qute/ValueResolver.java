@@ -13,6 +13,8 @@ package io.quarkus.qute;
 public interface ValueResolver extends Resolver, WithPriority {
 
     /**
+     * The {@link #resolve(EvalContext)} method is called if and only if this method returned {@code true} for the same
+     * {@link EvalContext}.
      *
      * @param context
      * @return {@code true} if this resolver applies to the given context

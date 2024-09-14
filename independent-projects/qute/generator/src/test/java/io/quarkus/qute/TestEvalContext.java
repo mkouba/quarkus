@@ -12,6 +12,7 @@ public class TestEvalContext implements EvalContext {
     private final String name;
     private final List<Expression> params;
     private Function<Expression, CompletionStage<Object>> evaluate;
+    private Object data;
 
     public TestEvalContext(Object base, String name,
             Function<Expression, CompletionStage<Object>> evaluate, String... params) {
@@ -50,6 +51,16 @@ public class TestEvalContext implements EvalContext {
     @Override
     public Object getAttribute(String key) {
         return null;
+    }
+
+    @Override
+    public void setData(Object data) {
+        this.data = data;
+    }
+
+    @Override
+    public Object getData() {
+        return data;
     }
 
 }

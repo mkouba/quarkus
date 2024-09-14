@@ -60,6 +60,16 @@ public class NotFoundResultTest {
             public CompletionStage<Object> evaluate(String expression) {
                 return null;
             }
+
+            @Override
+            public void setData(Object data) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public Object getData() {
+                throw new UnsupportedOperationException();
+            }
         };
     }
 

@@ -76,7 +76,17 @@ public class EvaluatedParamsTest {
 
             @Override
             public CompletionStage<Object> evaluate(String expression) {
-                return null;
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public void setData(Object data) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public Object getData() {
+                throw new UnsupportedOperationException();
             }
         });
         assertTrue(params.stage instanceof CompletedStage);

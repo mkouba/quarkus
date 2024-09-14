@@ -213,6 +213,8 @@ class EvaluatorImpl implements Evaluator {
         return resolverInvoker.resolve(applicableResolver, evalContext).thenCompose(r -> {
             if (Results.isNotFound(r)) {
                 // Result not found - try the next resolver
+                // and make sure the data are reset
+                evalContext.setData(null);
                 return resolve(evalContext, remainingResolvers, false, expression, isLastPart, partIndex);
             } else {
                 // Cache the first resolver where a result is found
@@ -256,6 +258,7 @@ class EvaluatorImpl implements Evaluator {
         final ResolutionContext resolutionContext;
         final PartImpl part;
         final String name;
+        Object data;
 
         NamespaceEvalContextImpl(ResolutionContext resolutionContext, Part part) {
             this.resolutionContext = resolutionContext;
@@ -291,6 +294,16 @@ class EvaluatorImpl implements Evaluator {
         @Override
         public Object getAttribute(String key) {
             return resolutionContext.getAttribute(key);
+        }
+
+        @Override
+        public void setData(Object data) {
+            this.data = data;
+        }
+
+        @Override
+        public Object getData() {
+            return data;
         }
 
         @Override
@@ -355,6 +368,7 @@ class EvaluatorImpl implements Evaluator {
         final PartImpl part;
         final List<Expression> params;
         final String name;
+        Object data;
 
         EvalContextImpl(Object base, ResolutionContext resolutionContext, Part part) {
             this.base = base;
@@ -396,6 +410,16 @@ class EvaluatorImpl implements Evaluator {
 
         ValueResolver getCachedResolver() {
             return part.cachedResolver;
+        }
+
+        @Override
+        public void setData(Object data) {
+            this.data = data;
+        }
+
+        @Override
+        public Object getData() {
+            return data;
         }
 
         void setCachedResolver(ValueResolver valueResolver) {

@@ -40,15 +40,23 @@ public class ReflectionValueResolver implements ValueResolver {
             return false;
         }
         // Check if there is a member with the given name and number of params
-        return candidates.computeIfAbsent(MemberKey.from(context), this::findCandidate).isPresent();
+        Optional<AccessorCandidate> candidate = candidates.computeIfAbsent(MemberKey.from(context), this::findCandidate);
+        if (candidate.isPresent()) {
+            context.setData(candidate.get());
+            return true;
+        }
+        return false;
     }
 
     @Override
     public CompletionStage<Object> resolve(EvalContext context) {
-        Object base = context.getBase();
-        MemberKey key = MemberKey.from(context);
         // At this point the candidate for the given key should be already computed
-        AccessorCandidate candidate = candidates.get(key).orElse(null);
+        AccessorCandidate candidate = (AccessorCandidate) context.getData();
+        if (candidate == null) {
+            // This should never happen in normal workflow
+            MemberKey key = MemberKey.from(context);
+            candidate = candidates.get(key).orElse(null);
+        }
         if (candidate == null) {
             return Results.notFound(context);
         }
@@ -56,7 +64,7 @@ public class ReflectionValueResolver implements ValueResolver {
         if (accessor == null) {
             return Results.notFound(context);
         }
-        return accessor.getValue(base);
+        return accessor.getValue(context.getBase());
     }
 
     public void clearCache() {

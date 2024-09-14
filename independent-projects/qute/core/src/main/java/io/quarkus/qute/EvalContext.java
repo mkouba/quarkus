@@ -57,4 +57,20 @@ public interface EvalContext {
      */
     Object getAttribute(String key);
 
+    /**
+     * Value resolvers can store some arbitrary data in the context during {@link ValueResolver#appliesTo(EvalContext)}
+     * invocation and obtain it later with {@link #getData()} during {@link ValueResolver#resolve(EvalContext)} to speed up
+     * evaluation and conserve resources.
+     *
+     * @param data
+     */
+    void setData(Object data);
+
+    /**
+     *
+     * @return the data previously set by {@link #setData(Object)} or {@code null}
+     * @see #setData(Object)
+     */
+    Object getData();
+
 }
