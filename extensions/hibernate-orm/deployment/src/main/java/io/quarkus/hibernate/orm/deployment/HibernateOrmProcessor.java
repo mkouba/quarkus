@@ -587,8 +587,10 @@ public final class HibernateOrmProcessor {
         for (String integratorClassName : ServiceUtil.classNamesNamedIn(classLoader, INTEGRATOR_SERVICE_FILE)) {
             integratorClasses.add((Class<? extends Integrator>) recorderContext.classProxy(integratorClassName));
         }
-        if (launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT) {
+        if (launchMode.getLaunchMode().isDev()) {
             integratorClasses.add(HibernateOrmDevIntegrator.class);
+        }
+        if (launchMode.getLaunchMode().isDevOrTest()) {
             integratorClasses.add(SchemaManagementIntegrator.class);
         }
 
