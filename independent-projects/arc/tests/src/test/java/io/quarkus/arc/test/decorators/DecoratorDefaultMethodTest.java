@@ -23,7 +23,6 @@ public class DecoratorDefaultMethodTest {
     public ArcTestContainer container = new ArcTestContainer(Converter.class, ToLengthConverter.class,
             ConverterDecorator.class);
 
-    @SuppressWarnings("serial")
     @Test
     public void testDecoration() {
         Converter<String> converter = Arc.container().instance(new TypeLiteral<Converter<String>>() {
@@ -31,6 +30,7 @@ public class DecoratorDefaultMethodTest {
         assertEquals(5, converter.convert("Hola!"));
         assertTrue(converter.convertToBoolean("echo"));
         assertFalse(converter.convertToBoolean("echos"));
+        assertEquals("hola!", converter.convertToString("Hola!"));
     }
 
     interface Converter<T> {
@@ -43,14 +43,26 @@ public class DecoratorDefaultMethodTest {
         default boolean convertToBoolean(T value) {
             return false;
         }
+
+        // this method is intentionally not decorated by ConverterDecorator
+        default String convertToString(T value) {
+            return value.toString();
+        }
     }
 
     @ApplicationScoped
     static class ToLengthConverter implements Converter<String> {
+
         @Override
         public int convert(String value) {
             return value.length();
         }
+
+        @Override
+        public String convertToString(String value) {
+            return value.toLowerCase();
+        }
+
     }
 
     @Priority(1)
