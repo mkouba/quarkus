@@ -71,6 +71,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.gizmo2.ClassOutput;
@@ -86,6 +87,7 @@ import io.quarkus.runtime.metrics.MetricsFactory;
 import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.scheduler.Scheduled;
 import io.quarkus.scheduler.ScheduledExecution;
+import io.quarkus.scheduler.SchedulerTest;
 import io.quarkus.scheduler.common.runtime.DefaultInvoker;
 import io.quarkus.scheduler.common.runtime.MutableScheduledMethod;
 import io.quarkus.scheduler.common.runtime.SchedulerContext;
@@ -96,6 +98,7 @@ import io.quarkus.scheduler.runtime.Constituent;
 import io.quarkus.scheduler.runtime.SchedulerConfig;
 import io.quarkus.scheduler.runtime.SchedulerRecorder;
 import io.quarkus.scheduler.runtime.SimpleScheduler;
+import io.quarkus.scheduler.runtime.test.SchedulerTestInterceptor;
 import io.quarkus.security.spi.RunAsUserPredicateBuildItem;
 import io.smallrye.common.annotation.Identifier;
 
@@ -157,12 +160,15 @@ public class SchedulerProcessor {
 
     @BuildStep
     void beans(DiscoveredImplementationsBuildItem discoveredImplementations,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans, LaunchModeBuildItem launchMode) {
         additionalBeans.produce(new AdditionalBeanBuildItem(Scheduled.ApplicationNotRunning.class));
         if (discoveredImplementations.getImplementations().size() == 1
                 || discoveredImplementations.isCompositeSchedulerUsed()) {
             // Quartz extension is not present or composite scheduler is used
             additionalBeans.produce(new AdditionalBeanBuildItem(SimpleScheduler.class));
+        }
+        if (launchMode.isTest()) {
+            additionalBeans.produce(new AdditionalBeanBuildItem(SchedulerTest.class, SchedulerTestInterceptor.class));
         }
     }
 
